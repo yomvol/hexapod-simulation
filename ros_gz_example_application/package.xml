@@ -4,10 +4,9 @@
   <name>ros_gz_example_application</name>
   <version>0.0.0</version>
   <description>Application-specific implementations for the ros_gz_project example</description>
-  <maintainer email="michael@openrobotics.org">Michael Carroll</maintainer>
+  <maintainer email="yomvol7@gmail.com">Viktor Budylin</maintainer>
   <license>Apache 2.0</license>
-  <author>Michael Carroll</author>
-  <author>Dharini Dutia</author>
+  <author>Viktor Budylin</author>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
