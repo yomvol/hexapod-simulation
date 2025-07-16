@@ -1,0 +1,73 @@
+<?xml version="1.0" ?>
+<robot name="PhantomX"  xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:include filename="$(find hexapod_description)/models/phantomx/urdf/phantomx.urdf.xacro" />
+
+  <!-- <xacro:macro name="transmission" params="leg_number joint_number">
+    <transmission name="transmission_${leg_number}_${joint_number}">
+      <type>transmission_interface/SimpleTransmission</type>
+      <joint name="joint_${leg_number}_${joint_number}">
+        <hardwareInterface>hardware_interface::PositionJointInterface</hardwareInterface>
+      </joint>
+      <actuator name="actuator_${leg_number}_${joint_number}">
+        <hardwareInterface>hardware_interface::PositionActuatorInterface</hardwareInterface>
+        <mechanicalReduction>1.0</mechanicalReduction>
+      </actuator>
+    </transmission>
+  </xacro:macro> -->
+
+  <ros2_control name="GazeboSimSystem" type="system">
+    <hardware>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
+    </hardware>
+    <xacro:macro name="joint" params="leg_number joint_number">
+      <joint name="joint_${leg_number}_${joint_number}">
+        <command_interface name="position"/>  <!-- controlling joint positions -->
+        <state_interface name="position">    
+          <!-- <param name="initial_value">${initial_positions['joint${leg_number}_${joint_number}']}</param> Configuring initial value -->
+        </state_interface>
+        <state_interface name="velocity"/>    
+      </joint>
+    </xacro:macro> 
+    
+    <!-- Leg 1 joints -->
+    <xacro:joint leg_number="1" joint_number="1"/>
+    <xacro:joint leg_number="1" joint_number="2"/>
+    <xacro:joint leg_number="1" joint_number="3"/>
+    
+    <!-- Leg 2 joints -->
+    <xacro:joint leg_number="2" joint_number="1"/>
+    <xacro:joint leg_number="2" joint_number="2"/>
+    <xacro:joint leg_number="2" joint_number="3"/>
+    
+    <!-- Leg 3 joints -->
+    <xacro:joint leg_number="3" joint_number="1"/>
+    <xacro:joint leg_number="3" joint_number="2"/>
+    <xacro:joint leg_number="3" joint_number="3"/>
+    
+    <!-- Leg 4 joints -->
+    <xacro:joint leg_number="4" joint_number="1"/>
+    <xacro:joint leg_number="4" joint_number="2"/>
+    <xacro:joint leg_number="4" joint_number="3"/>
+    
+    <!-- Leg 5 joints -->
+    <xacro:joint leg_number="5" joint_number="1"/>
+    <xacro:joint leg_number="5" joint_number="2"/>
+    <xacro:joint leg_number="5" joint_number="3"/>
+    
+    <!-- Leg 6 joints -->
+    <xacro:joint leg_number="6" joint_number="1"/>
+    <xacro:joint leg_number="6" joint_number="2"/>
+    <xacro:joint leg_number="6" joint_number="3"/>
+  </ros2_control>
+
+  <!-- GAZEBO SIMULATION PLUGINS  -->
+  <!-- ros2_control integration plugin for Gazebo -->
+  <gazebo>
+    <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <robot_param>robot_description</robot_param>
+      <robot_param_node>robot_state_publisher</robot_param_node>
+      <parameters>$(find hexapod_description)/control/controller_manager.yaml</parameters>
+    </plugin>
+  </gazebo>
+</robot>

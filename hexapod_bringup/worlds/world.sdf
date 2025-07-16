@@ -2,6 +2,12 @@
 
 <sdf version="1.8">
   <world name="warehouse_world">
+    <physics type="ignored">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000.0</real_time_update_rate>
+    </physics>
+    
     <plugin
       filename="gz-sim-physics-system"
       name="gz::sim::systems::Physics">
@@ -38,11 +44,11 @@
         </include>
     </model>
 
-    <model name="robot">
+    <!-- <model name="robot">
         <self_collide>true</self_collide>
         <pose>0 0 0.3 0 0 0</pose>
         <include>
-            <uri>package://hexapod_description/models/phantomx/urdf/phantomx.urdf</uri>
+            <uri>package://hexapod_description/models/phantomx/urdf/phantomx.xacro</uri>
         </include>
 
         <plugin
@@ -58,7 +64,7 @@
         <static_publisher>true</static_publisher>
         <static_update_frequency>1</static_update_frequency>
         </plugin>
-    </model>
+    </model> -->
 
   </world>
 </sdf>

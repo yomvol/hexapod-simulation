@@ -1,159 +1,160 @@
-<robot name="phantomx" version="1.0">
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
   <joint name="j_phantomx_attachment" type="fixed">
     <origin rpy="0.00000 0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
     <parent link="base_link"/>
     <child link="body"/>
   </joint>
-  <joint name="j_c1_lf" type="revolute">
+  <joint name="joint_1_1" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="-3.14147 -1.57071 -0.78578" xyz="0.12480 0.06164 0.00112"/>
     <parent link="body"/>
     <child link="coxa1_lf"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_c2_lr" type="fixed">
+  <joint name="joint_3_coxa" type="fixed">
     <origin rpy="-0.00010 1.57040 3.14149" xyz="0.00000 -0.05400 0.00000"/>
     <parent link="coxa1_lr"/>
     <child link="coxa2_lr"/>
   </joint>
-  <joint name="j_femur_lr" type="revolute">
+  <joint name="joint_3_2" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="3.14159 0.00000 0.00000" xyz="-0.00000 -0.00000 0.00000"/>
     <parent link="coxa2_lr"/>
     <child link="femur_lr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_tibia_lr" type="revolute">
+  <joint name="joint_3_3" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="-1.57070 -0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
     <parent link="femur_lr"/>
     <child link="tibia_lr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_c1_rf" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
-    <origin rpy="3.14147 -1.57071 -2.35633" xyz="0.12480 -0.06164 0.00112"/>
-    <parent link="body"/>
-    <child link="coxa1_rf"/>
-    <axis xyz="1.00000 0.00000 0.00000"/>
-  </joint>
-  <joint name="j_c2_rf" type="fixed">
-    <origin rpy="-0.00042 1.57040 3.14117" xyz="0.00000 -0.05400 -0.00000"/>
-    <parent link="coxa1_rf"/>
-    <child link="coxa2_rf"/>
-  </joint>
-  <joint name="j_femur_rf" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
-    <origin rpy="3.14159 -0.00000 -0.00000" xyz="-0.00000 0.00000 0.00000"/>
-    <parent link="coxa2_rf"/>
-    <child link="femur_rf"/>
-    <axis xyz="1.00000 0.00000 0.00000"/>
-  </joint>
-  <joint name="j_tibia_rf" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
-    <origin rpy="-1.57070 0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
-    <parent link="femur_rf"/>
-    <child link="tibia_rf"/>
-    <axis xyz="1.00000 0.00000 0.00000"/>
-  </joint>
-  <joint name="j_c1_rm" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
-    <origin rpy="3.14159 -1.57071 3.14159" xyz="0.00000 -0.10340 0.00112"/>
-    <parent link="body"/>
-    <child link="coxa1_rm"/>
-    <axis xyz="1.00000 0.00000 0.00000"/>
-  </joint>
-  <joint name="j_c2_rm" type="fixed">
-    <origin rpy="-0.00000 1.57040 3.14159" xyz="0.00000 -0.05400 0.00000"/>
-    <parent link="coxa1_rm"/>
-    <child link="coxa2_rm"/>
-  </joint>
-  <joint name="j_femur_rm" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
-    <origin rpy="3.14159 -0.00000 0.00000" xyz="-0.00000 0.00000 -0.00000"/>
-    <parent link="coxa2_rm"/>
-    <child link="femur_rm"/>
-    <axis xyz="1.00000 0.00000 0.00000"/>
-  </joint>
-  <joint name="j_c2_lf" type="fixed">
-    <origin rpy="0.00011 1.57040 -3.14149" xyz="-0.00000 -0.05400 -0.00000"/>
-    <parent link="coxa1_lf"/>
-    <child link="coxa2_lf"/>
-  </joint>
-  <joint name="j_tibia_rm" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
-    <origin rpy="-1.57070 0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
-    <parent link="femur_rm"/>
-    <child link="tibia_rm"/>
-    <axis xyz="1.00000 0.00000 0.00000"/>
-  </joint>
-  <joint name="j_c1_rr" type="revolute">
+  <joint name="joint_4_1" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="-3.14147 -1.57071 2.35633" xyz="-0.12480 -0.06164 0.00112"/>
     <parent link="body"/>
     <child link="coxa1_rr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_c2_rr" type="fixed">
+  <joint name="joint_4_coxa" type="fixed">
     <origin rpy="0.00043 1.57040 -3.14117" xyz="-0.00000 -0.05400 0.00000"/>
     <parent link="coxa1_rr"/>
     <child link="coxa2_rr"/>
   </joint>
-  <joint name="j_femur_rr" type="revolute">
+  <joint name="joint_4_2" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="3.14159 -0.00000 0.00000" xyz="0.00000 0.00000 -0.00000"/>
     <parent link="coxa2_rr"/>
     <child link="femur_rr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_tibia_rr" type="revolute">
+  <joint name="joint_4_3" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="-1.57070 0.00000 3.14159" xyz="0.00000 -0.06450 -0.01450"/>
     <parent link="femur_rr"/>
     <child link="tibia_rr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_femur_lf" type="revolute">
+  <joint name="joint_5_1" type="revolute">
+    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <origin rpy="3.14159 -1.57071 3.14159" xyz="0.00000 -0.10340 0.00112"/>
+    <parent link="body"/>
+    <child link="coxa1_rm"/>
+    <axis xyz="1.00000 0.00000 0.00000"/>
+  </joint>
+  <joint name="joint_5_coxa" type="fixed">
+    <origin rpy="-0.00000 1.57040 3.14159" xyz="0.00000 -0.05400 0.00000"/>
+    <parent link="coxa1_rm"/>
+    <child link="coxa2_rm"/>
+  </joint>
+  <joint name="joint_5_2" type="revolute">
+    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <origin rpy="3.14159 -0.00000 0.00000" xyz="-0.00000 0.00000 -0.00000"/>
+    <parent link="coxa2_rm"/>
+    <child link="femur_rm"/>
+    <axis xyz="1.00000 0.00000 0.00000"/>
+  </joint>
+  <joint name="joint_1_coxa" type="fixed">
+    <origin rpy="0.00011 1.57040 -3.14149" xyz="-0.00000 -0.05400 -0.00000"/>
+    <parent link="coxa1_lf"/>
+    <child link="coxa2_lf"/>
+  </joint>
+  <joint name="joint_5_3" type="revolute">
+    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <origin rpy="-1.57070 0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
+    <parent link="femur_rm"/>
+    <child link="tibia_rm"/>
+    <axis xyz="1.00000 0.00000 0.00000"/>
+  </joint>
+  <joint name="joint_6_1" type="revolute">
+    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <origin rpy="3.14147 -1.57071 -2.35633" xyz="0.12480 -0.06164 0.00112"/>
+    <parent link="body"/>
+    <child link="coxa1_rf"/>
+    <axis xyz="1.00000 0.00000 0.00000"/>
+  </joint>
+  <joint name="joint_6_coxa" type="fixed">
+    <origin rpy="-0.00042 1.57040 3.14117" xyz="0.00000 -0.05400 -0.00000"/>
+    <parent link="coxa1_rf"/>
+    <child link="coxa2_rf"/>
+  </joint>
+  <joint name="joint_6_2" type="revolute">
+    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <origin rpy="3.14159 -0.00000 -0.00000" xyz="-0.00000 0.00000 0.00000"/>
+    <parent link="coxa2_rf"/>
+    <child link="femur_rf"/>
+    <axis xyz="1.00000 0.00000 0.00000"/>
+  </joint>
+  <joint name="joint_6_3" type="revolute">
+    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <origin rpy="-1.57070 0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
+    <parent link="femur_rf"/>
+    <child link="tibia_rf"/>
+    <axis xyz="1.00000 0.00000 0.00000"/>
+  </joint>
+  <joint name="joint_1_2" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="3.14159 0.00000 0.00000" xyz="0.00000 0.00000 -0.00000"/>
     <parent link="coxa2_lf"/>
     <child link="femur_lf"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_tibia_lf" type="revolute">
+  <joint name="joint_1_3" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="-1.57070 0.00000 3.14159" xyz="0.00000 -0.06450 -0.01450"/>
     <parent link="femur_lf"/>
     <child link="tibia_lf"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_c1_lm" type="revolute">
+  <joint name="joint_2_1" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="-3.14159 -1.57071 -0.00000" xyz="0.00000 0.10340 0.00112"/>
     <parent link="body"/>
     <child link="coxa1_lm"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_c2_lm" type="fixed">
+  <joint name="joint_2_coxa" type="fixed">
     <origin rpy="-0.00000 1.57040 3.14159" xyz="-0.00000 -0.05400 -0.00000"/>
     <parent link="coxa1_lm"/>
     <child link="coxa2_lm"/>
   </joint>
-  <joint name="j_femur_lm" type="revolute">
+  <joint name="joint_2_2" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="3.14159 0.00000 -0.00000" xyz="-0.00000 0.00000 -0.00000"/>
     <parent link="coxa2_lm"/>
     <child link="femur_lm"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_tibia_lm" type="revolute">
+  <joint name="joint_2_3" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="-1.57070 0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
     <parent link="femur_lm"/>
     <child link="tibia_lm"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
   </joint>
-  <joint name="j_c1_lr" type="revolute">
+  <joint name="joint_3_1" type="revolute">
     <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
     <origin rpy="3.14147 -1.57071 0.78578" xyz="-0.12480 0.06164 0.00112"/>
     <parent link="body"/>
@@ -261,81 +262,81 @@
       </geometry>
     </visual>
   </link>
-  <link name="coxa1_rf">
-    <collision name="c1_rf_None.001_collision">
-      <origin rpy="-0.00045 0.00000 0.00000" xyz="0.00015 -0.00910 -0.00007"/>
+  <link name="coxa1_rr">
+    <collision name="c1_rr_None.001_collision">
+      <origin rpy="0.00045 0.00000 -0.00000" xyz="0.00015 -0.00910 -0.00007"/>
       <geometry>
         <box size="0.04938 0.04321 0.02247"/>
       </geometry>
     </collision>
     <inertial>
-      <inertia ixx="0.00001" ixy="0.00000" ixz="0.00000" iyy="0.00001" iyz="0.00000" izz="0.00001"/>
+      <inertia ixx="0.00001" ixy="-0.00000" ixz="0.00000" iyy="0.00001" iyz="-0.00000" izz="0.00001"/>
       <origin rpy="0.00000 0.00000 0.00000" xyz="0.00015 -0.00910 -0.00007"/>
       <mass value="0.04000"/>
     </inertial>
-    <visual name="c1_rf_None.001">
+    <visual name="c1_rr_None.001">
       <material name="Light Blue"/>
-      <origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 -0.02520 0.00000"/>
+      <origin rpy="-0.00000 -0.00000 -0.00000" xyz="-0.00000 -0.02520 -0.00000"/>
       <geometry>
         <mesh filename="package://hexapod_description/models/phantomx/meshes/stl/connect.stl" scale="1.00000 1.00000 1.00000"/>
       </geometry>
     </visual>
   </link>
-  <link name="coxa2_rf">
-    <collision name="c2_rf_None.001_collision">
-      <origin rpy="-0.00000 0.00000 -0.00000" xyz="0.00015 -0.00910 -0.00007"/>
+  <link name="coxa2_rr">
+    <collision name="c2_rr_None.001_collision">
+      <origin rpy="0.00000 -0.00000 0.00000" xyz="0.00015 -0.00910 -0.00007"/>
       <geometry>
         <box size="0.04938 0.04321 0.02247"/>
       </geometry>
     </collision>
     <inertial>
-      <inertia ixx="0.00001" ixy="-0.00000" ixz="0.00000" iyy="0.00001" iyz="0.00000" izz="0.00001"/>
+      <inertia ixx="0.00001" ixy="0.00000" ixz="0.00000" iyy="0.00001" iyz="-0.00000" izz="0.00001"/>
       <origin rpy="0.00000 0.00000 0.00000" xyz="0.00015 -0.00910 -0.00007"/>
       <mass value="0.04000"/>
     </inertial>
-    <visual name="c2_rf_None.001">
+    <visual name="c2_rr_None.001">
       <material name="Light Blue"/>
-      <origin rpy="-0.00000 0.00000 0.00000" xyz="-0.00000 -0.02520 0.00000"/>
+      <origin rpy="-0.00000 -0.00000 -0.00000" xyz="0.00000 -0.02520 -0.00000"/>
       <geometry>
         <mesh filename="package://hexapod_description/models/phantomx/meshes/stl/connect.stl" scale="1.00000 1.00000 1.00000"/>
       </geometry>
     </visual>
   </link>
-  <link name="femur_rf">
-    <collision name="thigh_rf_None_collision">
-      <origin rpy="0.00000 0.00000 -0.00000" xyz="0.00105 -0.03200 -0.00475"/>
+  <link name="femur_rr">
+    <collision name="thigh_rr_None_collision">
+      <origin rpy="-0.00000 0.00000 -0.00000" xyz="0.00105 -0.03200 -0.00475"/>
       <geometry>
         <box size="0.05090 0.08700 0.04150"/>
       </geometry>
     </collision>
     <inertial>
-      <inertia ixx="0.00006" ixy="0.00002" ixz="0.00000" iyy="0.00006" iyz="0.00000" izz="0.00008"/>
+      <inertia ixx="0.00006" ixy="-0.00002" ixz="0.00000" iyy="0.00006" iyz="-0.00000" izz="0.00008"/>
       <origin rpy="0.00000 0.00000 0.00000" xyz="0.00105 -0.03200 -0.00475"/>
       <mass value="0.10000"/>
     </inertial>
-    <visual name="thigh_rf_None">
+    <visual name="thigh_rr_None">
       <material name="Light Blue"/>
-      <origin rpy="0.00000 -0.00000 0.00000" xyz="-0.00000 -0.00000 -0.00000"/>
+      <origin rpy="-0.00000 -0.00000 -0.00000" xyz="-0.00000 0.00000 0.00000"/>
       <geometry>
         <mesh filename="package://hexapod_description/models/phantomx/meshes/stl/thigh_l.stl" scale="1.00000 1.00000 1.00000"/>
       </geometry>
     </visual>
   </link>
-  <link name="tibia_rf">
-    <collision name="tibia_rf_None_collision">
-      <origin rpy="0.00000 -0.00000 -0.00000" xyz="-0.00095 0.07286 0.02098"/>
+  <link name="tibia_rr">
+    <collision name="tibia_rr_None_collision">
+      <origin rpy="-0.00000 -0.00000 0.00000" xyz="-0.00095 0.07286 0.02098"/>
       <geometry>
         <box size="0.04800 0.17538 0.07059"/>
       </geometry>
     </collision>
     <inertial>
-      <inertia ixx="0.00029" ixy="0.00001" ixz="-0.00000" iyy="0.00029" iyz="-0.00000" izz="0.00006"/>
+      <inertia ixx="0.00029" ixy="-0.00001" ixz="-0.00000" iyy="0.00029" iyz="0.00000" izz="0.00006"/>
       <origin rpy="0.00000 0.00000 0.00000" xyz="-0.00095 0.07286 0.02098"/>
       <mass value="0.10000"/>
     </inertial>
-    <visual name="tibia_rf_None">
+    <visual name="tibia_rr_None">
       <material name="Orange"/>
-      <origin rpy="0.00000 0.00000 0.00000" xyz="-0.00000 0.00000 0.00000"/>
+      <origin rpy="-0.00000 0.00000 0.00000" xyz="0.00000 -0.00000 0.00000"/>
       <geometry>
         <mesh filename="package://hexapod_description/models/phantomx/meshes/stl/tibia_l.stl" scale="1.00000 1.00000 1.00000"/>
       </geometry>
@@ -441,81 +442,81 @@
       </geometry>
     </visual>
   </link>
-  <link name="coxa1_rr">
-    <collision name="c1_rr_None.001_collision">
-      <origin rpy="0.00045 0.00000 -0.00000" xyz="0.00015 -0.00910 -0.00007"/>
+  <link name="coxa1_rf">
+    <collision name="c1_rf_None.001_collision">
+      <origin rpy="-0.00045 0.00000 0.00000" xyz="0.00015 -0.00910 -0.00007"/>
       <geometry>
         <box size="0.04938 0.04321 0.02247"/>
       </geometry>
     </collision>
     <inertial>
-      <inertia ixx="0.00001" ixy="-0.00000" ixz="0.00000" iyy="0.00001" iyz="-0.00000" izz="0.00001"/>
+      <inertia ixx="0.00001" ixy="0.00000" ixz="0.00000" iyy="0.00001" iyz="0.00000" izz="0.00001"/>
       <origin rpy="0.00000 0.00000 0.00000" xyz="0.00015 -0.00910 -0.00007"/>
       <mass value="0.04000"/>
     </inertial>
-    <visual name="c1_rr_None.001">
+    <visual name="c1_rf_None.001">
       <material name="Light Blue"/>
-      <origin rpy="-0.00000 -0.00000 -0.00000" xyz="-0.00000 -0.02520 -0.00000"/>
+      <origin rpy="0.00000 -0.00000 0.00000" xyz="0.00000 -0.02520 0.00000"/>
       <geometry>
         <mesh filename="package://hexapod_description/models/phantomx/meshes/stl/connect.stl" scale="1.00000 1.00000 1.00000"/>
       </geometry>
     </visual>
   </link>
-  <link name="coxa2_rr">
-    <collision name="c2_rr_None.001_collision">
-      <origin rpy="0.00000 -0.00000 0.00000" xyz="0.00015 -0.00910 -0.00007"/>
+  <link name="coxa2_rf">
+    <collision name="c2_rf_None.001_collision">
+      <origin rpy="-0.00000 0.00000 -0.00000" xyz="0.00015 -0.00910 -0.00007"/>
       <geometry>
         <box size="0.04938 0.04321 0.02247"/>
       </geometry>
     </collision>
     <inertial>
-      <inertia ixx="0.00001" ixy="0.00000" ixz="0.00000" iyy="0.00001" iyz="-0.00000" izz="0.00001"/>
+      <inertia ixx="0.00001" ixy="-0.00000" ixz="0.00000" iyy="0.00001" iyz="0.00000" izz="0.00001"/>
       <origin rpy="0.00000 0.00000 0.00000" xyz="0.00015 -0.00910 -0.00007"/>
       <mass value="0.04000"/>
     </inertial>
-    <visual name="c2_rr_None.001">
+    <visual name="c2_rf_None.001">
       <material name="Light Blue"/>
-      <origin rpy="-0.00000 -0.00000 -0.00000" xyz="0.00000 -0.02520 -0.00000"/>
+      <origin rpy="-0.00000 0.00000 0.00000" xyz="-0.00000 -0.02520 0.00000"/>
       <geometry>
         <mesh filename="package://hexapod_description/models/phantomx/meshes/stl/connect.stl" scale="1.00000 1.00000 1.00000"/>
       </geometry>
     </visual>
   </link>
-  <link name="femur_rr">
-    <collision name="thigh_rr_None_collision">
-      <origin rpy="-0.00000 0.00000 -0.00000" xyz="0.00105 -0.03200 -0.00475"/>
+  <link name="femur_rf">
+    <collision name="thigh_rf_None_collision">
+      <origin rpy="0.00000 0.00000 -0.00000" xyz="0.00105 -0.03200 -0.00475"/>
       <geometry>
         <box size="0.05090 0.08700 0.04150"/>
       </geometry>
     </collision>
     <inertial>
-      <inertia ixx="0.00006" ixy="-0.00002" ixz="0.00000" iyy="0.00006" iyz="-0.00000" izz="0.00008"/>
+      <inertia ixx="0.00006" ixy="0.00002" ixz="0.00000" iyy="0.00006" iyz="0.00000" izz="0.00008"/>
       <origin rpy="0.00000 0.00000 0.00000" xyz="0.00105 -0.03200 -0.00475"/>
       <mass value="0.10000"/>
     </inertial>
-    <visual name="thigh_rr_None">
+    <visual name="thigh_rf_None">
       <material name="Light Blue"/>
-      <origin rpy="-0.00000 -0.00000 -0.00000" xyz="-0.00000 0.00000 0.00000"/>
+      <origin rpy="0.00000 -0.00000 0.00000" xyz="-0.00000 -0.00000 -0.00000"/>
       <geometry>
         <mesh filename="package://hexapod_description/models/phantomx/meshes/stl/thigh_l.stl" scale="1.00000 1.00000 1.00000"/>
       </geometry>
     </visual>
   </link>
-  <link name="tibia_rr">
-    <collision name="tibia_rr_None_collision">
-      <origin rpy="-0.00000 -0.00000 0.00000" xyz="-0.00095 0.07286 0.02098"/>
+  <link name="tibia_rf">
+    <collision name="tibia_rf_None_collision">
+      <origin rpy="0.00000 -0.00000 -0.00000" xyz="-0.00095 0.07286 0.02098"/>
       <geometry>
         <box size="0.04800 0.17538 0.07059"/>
       </geometry>
     </collision>
     <inertial>
-      <inertia ixx="0.00029" ixy="-0.00001" ixz="-0.00000" iyy="0.00029" iyz="0.00000" izz="0.00006"/>
+      <inertia ixx="0.00029" ixy="0.00001" ixz="-0.00000" iyy="0.00029" iyz="-0.00000" izz="0.00006"/>
       <origin rpy="0.00000 0.00000 0.00000" xyz="-0.00095 0.07286 0.02098"/>
       <mass value="0.10000"/>
     </inertial>
-    <visual name="tibia_rr_None">
+    <visual name="tibia_rf_None">
       <material name="Orange"/>
-      <origin rpy="-0.00000 0.00000 0.00000" xyz="0.00000 -0.00000 0.00000"/>
+      <origin rpy="0.00000 0.00000 0.00000" xyz="-0.00000 0.00000 0.00000"/>
       <geometry>
         <mesh filename="package://hexapod_description/models/phantomx/meshes/stl/tibia_l.stl" scale="1.00000 1.00000 1.00000"/>
       </geometry>
