@@ -21,12 +21,8 @@ def generate_launch_description():
         'urdf',
         'phantomx.xacro'
     ])
-    # xacro_file  =  os.path.join(pkg_project_description, 'models', 'phantomx', 'urdf', 'phantomx.xacro')
     generated_urdf = Command([FindExecutable(name='xacro'), ' ', xacro_file])
-    # with open(generated_urdf, 'r') as infp:
-    #     robot_desc = infp.read()
     robot_desc = {'robot_description': generated_urdf}
-
 
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -38,21 +34,7 @@ def generate_launch_description():
         ),
         launch_arguments=[
             ('gz_args', [PathJoinSubstitution([pkg_project_bringup, 'worlds', 'world.sdf']),
-                         ' -v 1', ' -r'])] # minimal verbosity level is 1, adjust up to 4 included on need
-                         
-        # launch_arguments={'gz_args': PathJoinSubstitution([
-        #     pkg_project_bringup,
-        #     'worlds',
-        #     'world.sdf',
-        # ]),}.items()
-    )
-
-    joint_state_publisher_gui = Node(
-        package='joint_state_publisher_gui',
-        executable='joint_state_publisher_gui',
-        name='joint_state_publisher_gui',
-        parameters=[robot_desc],
-        output='screen'
+                         ' -v 3', ' -r'])] # minimal verbosity level is 1, adjust up to 4 included on need
     )
 
     # Takes the description and joint angles as inputs and publishes the 3D poses of the robot links
@@ -89,15 +71,15 @@ def generate_launch_description():
     )
 
     # Bridge ROS topics and Gazebo messages for establishing communication
-    # bridge = Node(
-    #     package='ros_gz_bridge',
-    #     executable='parameter_bridge',
-    #     parameters=[{
-    #         'config_file': PathJoinSubstitution([pkg_project_bringup, 'config', 'ros_gz_bridge.yaml']),
-    #         'qos_overrides./tf_static.publisher.durability': 'transient_local',
-    #     }],
-    #     output='screen'
-    # )
+    bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        parameters=[{
+            'config_file': PathJoinSubstitution([pkg_project_bringup, 'config', 'ros_gz_bridge.yaml']),
+            'qos_overrides./tf_static.publisher.durability': 'transient_local',
+        }],
+        output='screen'
+    )
 
     # Spawn joint state broadcaster
     joint_state_broadcaster_spawner = Node(
@@ -107,7 +89,6 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Spawn leg controllers
     leg1_controller_spawner = Node(
         package='controller_manager',
         executable='spawner',
@@ -151,12 +132,12 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        gz_sim,
         DeclareLaunchArgument('rviz', default_value='true',
                               description='Open RViz.'),
+        gz_sim,
+        bridge,
         robot_state_publisher,
         spawn_entity,
-        joint_state_publisher_gui,
         rviz,
         joint_state_broadcaster_spawner,
         leg1_controller_spawner,
