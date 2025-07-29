@@ -131,6 +131,14 @@ def generate_launch_description():
         output='screen'
     )
 
+    trajectory_publisher = Node(
+        package='hexapod_controller',
+        executable='hexapod_controller',
+        name='hexapod_controller',
+        output='screen',
+        arguments=["--ros-args", "--log-level", "debug"]
+    )
+
     return LaunchDescription([
         DeclareLaunchArgument('rviz', default_value='true',
                               description='Open RViz.'),
@@ -145,5 +153,6 @@ def generate_launch_description():
         leg3_controller_spawner,
         leg4_controller_spawner,
         leg5_controller_spawner,
-        leg6_controller_spawner
+        leg6_controller_spawner,
+        trajectory_publisher
     ])
