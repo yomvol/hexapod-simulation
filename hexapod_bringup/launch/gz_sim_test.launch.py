@@ -136,7 +136,9 @@ def generate_launch_description():
         executable='hexapod_controller',
         name='hexapod_controller',
         output='screen',
-        arguments=["--ros-args", "--log-level", "debug"]
+        # Debugging options
+        # prefix=['gdbserver localhost:3000'],  
+        #arguments=["--ros-args", "--log-level", "debug"]
     )
 
     return LaunchDescription([

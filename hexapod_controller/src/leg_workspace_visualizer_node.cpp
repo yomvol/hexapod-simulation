@@ -53,15 +53,15 @@ private:
       for (double q1 = -M_PI/4; q1 <= M_PI/4; q1 += 0.3) {
         for (double q2 = -M_PI/2; q2 <= M_PI/2; q2 += 0.3) {
           for (double q3 = -M_PI/2; q3 <= M_PI/2; q3 += 0.3) {
-            Vec3 leg_tip = gait_engine_->ComputeLegFK({q1, q2, q3});
+            Vec3 leg_tip = gait_engine_->computeLegFK({q1, q2, q3});
             
             // convert to geometry_msgs::msg::Point for transformation
             geometry_msgs::msg::PointStamped leg_tip_point;
             leg_tip_point.header.frame_id = coxa_frame;
             leg_tip_point.header.stamp = this->get_clock()->now();
-            leg_tip_point.point.x = leg_tip.x / 1000.0 + 0.01; // adjust for z offset (in meters)
-            leg_tip_point.point.y = leg_tip.y / 1000.0;
-            leg_tip_point.point.z = leg_tip.z / 1000.0;
+            leg_tip_point.point.x = leg_tip.x; // adjust for z offset (in meters)
+            leg_tip_point.point.y = leg_tip.y;
+            leg_tip_point.point.z = leg_tip.z;
             
             // transform to base_link frame
             geometry_msgs::msg::PointStamped point_base;
