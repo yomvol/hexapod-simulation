@@ -53,7 +53,7 @@ public:
     /// IMPORTANT: returned position is local to coxa frame!!!
     /// @param leg_id The ID of the leg (0-5)
     /// @return The position of the leg endpoint in the body frame
-    Vec3 getLegEndpoint() {
+    Eigen::Vector3d getLegEndpoint() {
         auto endpoint_pos = computeLegFK({0, 0, 0});
         return {endpoint_pos.x, endpoint_pos.y, endpoint_pos.z};
     }

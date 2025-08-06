@@ -173,6 +173,11 @@ private:
         }
       }
 
+      RCLCPP_INFO(this->get_logger(), "Leg1 IK joint velocities: v1=%.2f, v2=%.2f, v3=%.2f",
+                  p.velocities[0] * 180.0 / M_PI, 
+                  p.velocities[1] * 180.0 / M_PI, 
+                  p.velocities[2] * 180.0 / M_PI);
+
       trajectory_msgs::msg::JointTrajectoryPoint point;
       point.positions = p.joint_angles;
       point.velocities = p.velocities;

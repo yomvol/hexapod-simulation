@@ -23,6 +23,7 @@
     <xacro:macro name="joint" params="leg_number joint_number">
       <joint name="joint_${leg_number}_${joint_number}">
         <command_interface name="position"/>  <!-- controlling joint positions -->
+        <command_interface name="velocity"/>  <!-- controlling joint velocities -->
         <state_interface name="position">    
           <!-- <param name="initial_value">${initial_positions['joint${leg_number}_${joint_number}']}</param> Configuring initial value -->
         </state_interface>

@@ -62,14 +62,18 @@ Vec3 GaitEngine::computeFootPosition(int leg_id, double time){
     }
     relative_stride.y = 0;
 
-    Vec3 foot_pos_local_to_coxa = getLegEndpoint(); // relative to coxa frame, Z up (joint axis), x along the leg, y to the side
-    foot_pos_local_to_coxa = foot_pos_local_to_coxa + relative_stride;
+    Eigen::Vector3d foot_pos_local_to_coxa = getLegEndpoint(); // relative to coxa frame, Z up (joint axis), x along the leg, y to the side
+    Eigen::Vector3d foot_pos_with_stride = foot_pos_local_to_coxa +
+    Eigen::Vector3d(relative_stride.x, relative_stride.y, relative_stride.z); // it's still in leg plane, but robot must move straight
 
-    auto foot_pos_global = (Eigen::Isometry3d(Eigen::AngleAxisd(-M_PI / 4 * leg_id, Eigen::Vector3d::UnitZ())) *
-        Eigen::Isometry3d(Eigen::Translation3d(foot_pos_local_to_coxa.x, foot_pos_local_to_coxa.y, foot_pos_local_to_coxa.z))).translation();
-    Vec3 foot_pos = {foot_pos_global.x(), foot_pos_global.y(), foot_pos_global.z()};
+    Eigen::Matrix4d alignment = Eigen::Matrix4d::Identity();
+    Eigen::Matrix3d rotation_matrix = Eigen::AngleAxisd(-M_PI / 4, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+    alignment.block<3, 3>(0, 0) = rotation_matrix;
+    alignment.block<3, 1>(0, 3) = rotation_matrix * (-foot_pos_local_to_coxa) + foot_pos_local_to_coxa;
 
-    return foot_pos;
+    auto foot_pos_aligned = alignment * Eigen::Vector4d(foot_pos_with_stride, 1.0);
+
+    return {foot_pos_aligned(0), foot_pos_aligned(1), foot_pos_aligned(2)};
 }
 
 std::optional<std::vector<double>> GaitEngine::getLegTrajectoryPoint(int leg_id, double time) {
