@@ -37,6 +37,21 @@ leg1_controller:
       - velocity
     allow_nonzero_velocity_at_trajectory_end: true
 
+    allow_partial_joints_goal: false
+    interpolate_from_desired_state: true
+    # constraints:
+    #   stopped_velocity_tolerance: 0.01
+    #   goal_time: 0.0
+    #   joint_1_1:
+    #     trajectory: 0.5
+    #     goal: 0.03
+    #   joint_1_2:
+    #     trajectory: 0.5
+    #     goal: 0.03
+    #   joint_1_3:
+    #     trajectory: 0.35
+    #     goal: 0.03
+
 leg2_controller:
   ros__parameters:
     joints:

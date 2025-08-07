@@ -1,11 +1,12 @@
 #include "gait_engine.hpp"
 #include <cmath>
 
-GaitEngine::GaitEngine() {
+GaitEngine::GaitEngine(int cycle_duration) {
     for (int i = 0; i < 6; ++i) {
         leg_transforms_[i].body_to_coxa = Eigen::Isometry3d::Identity();
     }
     frames_initialized_ = false;
+    cycle_duration_ = cycle_duration / 1000.0;
 }
 
 void GaitEngine::setLegFrames(const Eigen::Isometry3d& body_to_coxa, const Eigen::Isometry3d& coxa_to_tibia) {
@@ -43,26 +44,25 @@ Vec3 GaitEngine::computeFootPosition(int leg_id, double time){
     Vec3 relative_stride;
     const double phase_offset = getLegPhaseOffset(leg_id - 1);
     // scaling time into cycles
-    double gait_phase = fmod(time / CYCLE_DURATION + phase_offset, 1.0);
+    double gait_phase = fmod(time / cycle_duration_ + phase_offset, 1.0);
 
     if (gait_phase < DUTY_CYCLE) {
         // stance phase
         double s = gait_phase / DUTY_CYCLE; // parameter normalized [0.0, 1.0]
-        relative_stride.x = STRIDE_LENGTH * (0.5 - s); // from +0.04 to -0.04 m
-        relative_stride.y = 0.0;
+        relative_stride.x = STRIDE_LENGTH * (-s); // from 0 to -STRIDE_LENGTH
         relative_stride.z = 0.0;
     }
     else {
         // swing phase
         double s = (gait_phase - DUTY_CYCLE) / (1.0 - DUTY_CYCLE); // parameter normalized [0.0, 1.0]
-        relative_stride.x = -STRIDE_LENGTH * (0.5 - s); // from -0.04 to +0.04 m
+        relative_stride.x = STRIDE_LENGTH * (s - 1); // from -STRIDE_LENGTH to 0
 
         //relative_stride.x = 0.01 * cos(M_PI * s); // optional lateral sway (s - 0.5) ???
         relative_stride.z = STEP_HEIGHT * sin(M_PI * s); // nice smooth arc
     }
     relative_stride.y = 0;
 
-    Eigen::Vector3d foot_pos_local_to_coxa = getLegEndpoint(); // relative to coxa frame, Z up (joint axis), x along the leg, y to the side
+    Eigen::Vector3d foot_pos_local_to_coxa = getLegEndpoint(); // relative to coxa frame, Z up (joint axis), x along the leg, y to the side (global coords 0.23, 0.17, -0.18)
     Eigen::Vector3d foot_pos_with_stride = foot_pos_local_to_coxa +
     Eigen::Vector3d(relative_stride.x, relative_stride.y, relative_stride.z); // it's still in leg plane, but robot must move straight
 
@@ -71,8 +71,7 @@ Vec3 GaitEngine::computeFootPosition(int leg_id, double time){
     alignment.block<3, 3>(0, 0) = rotation_matrix;
     alignment.block<3, 1>(0, 3) = rotation_matrix * (-foot_pos_local_to_coxa) + foot_pos_local_to_coxa;
 
-    auto foot_pos_aligned = alignment * Eigen::Vector4d(foot_pos_with_stride, 1.0);
-
+    auto foot_pos_aligned = alignment * Eigen::Vector4d(foot_pos_with_stride.x(), foot_pos_with_stride.y(), foot_pos_with_stride.z(), 1.0);
     return {foot_pos_aligned(0), foot_pos_aligned(1), foot_pos_aligned(2)};
 }
 
@@ -134,8 +133,6 @@ Vec3 GaitEngine::computeLegFK(const std::array<double, 3>& joint_angles) {
 }
 
 std::optional<std::array<double, 3>> GaitEngine::computeLegIK(Vec3 leg_tip_position) {
-    leg_tip_position.z += 0.18; // vertical offset, IK equations expect the origin to be on the ground
-
     double theta1 = atan2(leg_tip_position.y, leg_tip_position.x);
     double l = sqrt(Z_OFFSET * Z_OFFSET + (leg_tip_position.x - COXA_LENGTH) * (leg_tip_position.x - COXA_LENGTH));
 

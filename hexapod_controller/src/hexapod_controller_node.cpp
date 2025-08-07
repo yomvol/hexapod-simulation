@@ -19,8 +19,7 @@ public:
   using FollowJointTrajectory = control_msgs::action::FollowJointTrajectory;
   using GoalHandle = rclcpp_action::ClientGoalHandle<FollowJointTrajectory>;
 
-  HexapodControllerNode() : Node("hexapod_controller"), 
-                            gait_engine_(std::make_shared<GaitEngine>()),
+  HexapodControllerNode() : Node("hexapod_controller"),
                             tf_buffer_(this->get_clock()),
                             tf_listener_(tf_buffer_) {
     // action clients to the leg controllers
@@ -40,6 +39,8 @@ public:
     marker_.color.a = 1.0f;
 
     timer_ = this->create_wall_timer(GAIT_CYCLE_DURATION, std::bind(&HexapodControllerNode::updateGaitCycle, this));
+
+    gait_engine_ = std::make_shared<GaitEngine>(GAIT_CYCLE_DURATION.count());
 
     // allowing tf buffer to populate
     init_timer_ = this->create_wall_timer(
@@ -124,29 +125,27 @@ private:
 
     // first pass: generate all joint angles for the trajectory points
     for (int i = 0; i < TRAJ_POINTS_PER_CYCLE; ++i) {
-      trajectory_points.emplace_back();
       double time_ratio = static_cast<double>(i) / (TRAJ_POINTS_PER_CYCLE - 1);
-      trajectory_points[i].relative_time_from_start = rclcpp::Duration(
-        std::chrono::milliseconds(static_cast<int64_t>(time_ratio * GAIT_CYCLE_DURATION.count())));
-      // trajectory_points[i].relative_time_from_start = rclcpp::Duration(
-      //   std::chrono::milliseconds(static_cast<int64_t>(time_ratio * GAIT_CYCLE_DURATION.count())));
+      auto relative_time = rclcpp::Duration(std::chrono::milliseconds(static_cast<int64_t>(time_ratio * GAIT_CYCLE_DURATION.count())));
 
       Vec3 leg_tip_pos;
-      auto joint_angles = gait_engine_->getLegTrajectoryPoint(1, 
-        (start_time + trajectory_points[i].relative_time_from_start).seconds(), leg_tip_pos);
+      auto joint_angles = gait_engine_->getLegTrajectoryPoint(1, (relative_time).seconds(), leg_tip_pos);
 
       if (!joint_angles) {
         RCLCPP_WARN(this->get_logger(), "Leg1 IK solution not found for trajectory point %d.", i);
         continue;
       }
-      trajectory_points[i].joint_angles = joint_angles.value();
-      trajectory_points[i].leg_tip_position_global = leg_tip_pos;
+
+      TrajectoryPoint point;
+      point.relative_time_from_start = relative_time;
+      point.joint_angles = joint_angles.value();
+      point.leg_tip_position_global = leg_tip_pos;
+      trajectory_points.push_back(point);
 
       RCLCPP_INFO(this->get_logger(), "Leg1 IK joint angles: theta1=%.2f, theta2=%.2f, theta3=%.2f",
                   joint_angles.value()[0] * 180.0 / M_PI, 
                   joint_angles.value()[1] * 180.0 / M_PI, 
                   joint_angles.value()[2] * 180.0 / M_PI);
-
     }
 
     double dt = (GAIT_CYCLE_DURATION.count() / 1000.0) / static_cast<double>(TRAJ_POINTS_PER_CYCLE - 1);
@@ -173,10 +172,10 @@ private:
         }
       }
 
-      RCLCPP_INFO(this->get_logger(), "Leg1 IK joint velocities: v1=%.2f, v2=%.2f, v3=%.2f",
-                  p.velocities[0] * 180.0 / M_PI, 
-                  p.velocities[1] * 180.0 / M_PI, 
-                  p.velocities[2] * 180.0 / M_PI);
+      // RCLCPP_INFO(this->get_logger(), "Leg1 IK joint velocities: v1=%.2f, v2=%.2f, v3=%.2f",
+      //             p.velocities[0] * 180.0 / M_PI, 
+      //             p.velocities[1] * 180.0 / M_PI, 
+      //             p.velocities[2] * 180.0 / M_PI);
 
       trajectory_msgs::msg::JointTrajectoryPoint point;
       point.positions = p.joint_angles;
@@ -193,6 +192,12 @@ private:
       leg_tip_point.point.y = p.leg_tip_position_global.y;
       leg_tip_point.point.z = p.leg_tip_position_global.z;
       marker_.points.push_back(leg_tip_point.point);
+
+      RCLCPP_INFO(this->get_logger(), "Leg tip position at time %.2f: (%.2f, %.2f, %.2f)",
+                  p.relative_time_from_start.seconds(),
+                  p.leg_tip_position_global.x,
+                  p.leg_tip_position_global.y,
+                  p.leg_tip_position_global.z);
     }
 
     if (traj.points.empty()) {

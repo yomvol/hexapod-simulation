@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 class LegWorkspaceVisualizer : public rclcpp::Node {
 public:
   LegWorkspaceVisualizer() : Node("leg_workspace_visualizer"), 
-                            gait_engine_(std::make_shared<GaitEngine>()),
+                            gait_engine_(std::make_shared<GaitEngine>(1000)),
                             tf_buffer_(this->get_clock()),
                             tf_listener_(tf_buffer_) {
     marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("visualization_marker", 10);

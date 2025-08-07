@@ -22,7 +22,7 @@ struct LegTransformMatrix {
 
 class GaitEngine {
 public:
-    GaitEngine();
+    GaitEngine(int cycle_duration);
 
     /// @brief Computes one point of the given leg's trajectory, if the computed point is unreachable, returns std::nullopt
     /// @param leg_id The ID of the leg (1-6)
@@ -61,6 +61,7 @@ public:
   private:
     LegTransformMatrix leg_transforms_[6]; // Transform matrices for each leg
     bool frames_initialized_ = false;
+    double cycle_duration_ = 0.0; // Duration of one gait cycle in seconds
     
     /// @brief Transform a point using Eigen transform
     Vec3 transformPoint(const Vec3& point, const Eigen::Isometry3d& transform) const;
@@ -92,7 +93,6 @@ public:
 
     const double STRIDE_LENGTH = 0.08; // 8 cm stride
     const double STEP_HEIGHT = 0.04; // 4 cm step lift
-    const double CYCLE_DURATION = 1.0; // 1 sec per cycle
     const double DUTY_CYCLE = 0.5; // stance 50%, swing 50%
 
     const double COXA_LENGTH = dh_params_.a1;
