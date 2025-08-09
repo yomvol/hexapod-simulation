@@ -58,7 +58,8 @@ private:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
   bool leg_frames_initialized_ = false;
   bool leg1_action_in_progress_ = false;
-  std::chrono::milliseconds GAIT_CYCLE_DURATION{10000}; // time it takes for one full step with swing and stance
+  //std::chrono::milliseconds GAIT_CYCLE_DURATION{10000}; // time it takes for one full step with swing and stance
+  std::chrono::seconds GAIT_CYCLE_DURATION{10}; // 10 seconds for one full gait cycle
   int TRAJ_POINTS_PER_CYCLE = 100;
   visualization_msgs::msg::Marker marker_;
 
@@ -69,7 +70,7 @@ private:
     rclcpp::Duration relative_time_from_start; // time from the start of the trajectory
     Vec3 leg_tip_position_global;
 
-    TrajectoryPoint() : joint_angles(3, 0.0), velocities(3, 0.0), relative_time_from_start(0, 0), leg_tip_position_global(0.0, 0.0, 0.0) {}
+    TrajectoryPoint() : joint_angles(3, 0.0), velocities(3, 0.0), relative_time_from_start(rclcpp::Duration::from_seconds(0)), leg_tip_position_global(0.0, 0.0, 0.0) {}
   };
 
   void initializeLegFrames() {
@@ -117,16 +118,21 @@ private:
     // create a complete trajectory for the entire gait cycle
     trajectory_msgs::msg::JointTrajectory traj;
     std::vector<TrajectoryPoint> trajectory_points;
-    auto start_time = this->get_clock()->now();
+    auto start_time = this->now() + rclcpp::Duration::from_seconds(0.1); // start after 100ms delay
     // if timestamp is not set, execution starts immediately
     // if timestamp is set, robot will freeze indefinitely REALLY WEIRD
-    //traj.header.stamp = start_time;
+    traj.header.stamp = start_time;
     traj.joint_names = {"joint_1_1", "joint_1_2", "joint_1_3"};
+    trajectory_points.reserve(TRAJ_POINTS_PER_CYCLE);
 
     // first pass: generate all joint angles for the trajectory points
     for (int i = 0; i < TRAJ_POINTS_PER_CYCLE; ++i) {
-      double time_ratio = static_cast<double>(i) / (TRAJ_POINTS_PER_CYCLE - 1);
-      auto relative_time = rclcpp::Duration(std::chrono::milliseconds(static_cast<int64_t>(time_ratio * GAIT_CYCLE_DURATION.count())));
+      double time_ratio = i / static_cast<double>(TRAJ_POINTS_PER_CYCLE);
+      double total_duration_sec = std::chrono::duration<double>(GAIT_CYCLE_DURATION).count();
+      double time_sec = time_ratio * total_duration_sec;
+
+      auto relative_time = rclcpp::Duration::from_seconds(time_sec);
+      //auto relative_time = rclcpp::Duration(std::chrono::milliseconds(static_cast<int64_t>(time_ratio * GAIT_CYCLE_DURATION.count())));
 
       Vec3 leg_tip_pos;
       auto joint_angles = gait_engine_->getLegTrajectoryPoint(1, (relative_time).seconds(), leg_tip_pos);
@@ -142,13 +148,14 @@ private:
       point.leg_tip_position_global = leg_tip_pos;
       trajectory_points.push_back(point);
 
-      RCLCPP_INFO(this->get_logger(), "Leg1 IK joint angles: theta1=%.2f, theta2=%.2f, theta3=%.2f",
+      RCLCPP_INFO(this->get_logger(), "Leg1 IK joint angles at time %.2f: theta1=%.2f, theta2=%.2f, theta3=%.2f",
+                  relative_time.seconds(),
                   joint_angles.value()[0] * 180.0 / M_PI, 
                   joint_angles.value()[1] * 180.0 / M_PI, 
                   joint_angles.value()[2] * 180.0 / M_PI);
     }
 
-    double dt = (GAIT_CYCLE_DURATION.count() / 1000.0) / static_cast<double>(TRAJ_POINTS_PER_CYCLE - 1);
+    double dt = (GAIT_CYCLE_DURATION.count()) / static_cast<double>(TRAJ_POINTS_PER_CYCLE - 1);
 
     // second pass: compute joint velocities and construct action message
     for (size_t i = 0; i < trajectory_points.size(); ++i) {
@@ -182,7 +189,12 @@ private:
       point.velocities = p.velocities;
 
       // time from trajectory start - must be increasing
-      point.time_from_start = p.relative_time_from_start;
+      //point.time_from_start = p.relative_time_from_start;
+      point.time_from_start = builtin_interfaces::msg::Duration();
+      point.time_from_start.sec = static_cast<int32_t>(p.relative_time_from_start.seconds());
+      point.time_from_start.nanosec = static_cast<uint32_t>((p.relative_time_from_start.nanoseconds() % 1000000000));
+      //point.time_from_start.sec = static_cast<int32_t>(p.relative_time_from_start.seconds());
+      //point.time_from_start.nanosec = static_cast<uint32_t>((p.relative_time_from_start.nanoseconds() % 1000000000));
       traj.points.push_back(point);
 
       geometry_msgs::msg::PointStamped leg_tip_point;
@@ -192,6 +204,8 @@ private:
       leg_tip_point.point.y = p.leg_tip_position_global.y;
       leg_tip_point.point.z = p.leg_tip_position_global.z;
       marker_.points.push_back(leg_tip_point.point);
+
+      //RCLCPP_INFO(get_logger(), "Sim time: %f", this->now().seconds());
 
       RCLCPP_INFO(this->get_logger(), "Leg tip position at time %.2f: (%.2f, %.2f, %.2f)",
                   p.relative_time_from_start.seconds(),

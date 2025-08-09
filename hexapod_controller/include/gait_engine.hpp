@@ -91,7 +91,7 @@ public:
       double theta3_offset = -66 * M_PI / 180.0; // joint angle offset for joint 3 (in radians)
     } dh_params_;
 
-    const double STRIDE_LENGTH = 0.08; // 8 cm stride
+    const double STRIDE_LENGTH = 0.05; // 8 cm stride
     const double STEP_HEIGHT = 0.04; // 4 cm step lift
     const double DUTY_CYCLE = 0.5; // stance 50%, swing 50%
 

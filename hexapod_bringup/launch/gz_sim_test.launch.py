@@ -52,7 +52,8 @@ def generate_launch_description():
     rviz = Node(
        package='rviz2',
        executable='rviz2',
-       arguments=['-d', PathJoinSubstitution([pkg_project_bringup, 'config', 'phantomx.rviz'])],
+       arguments=['-d', PathJoinSubstitution([pkg_project_bringup, 'config', 'phantomx.rviz']),],
+       parameters=[{'use_sim_time': True}],
        condition=IfCondition(LaunchConfiguration('rviz'))
     )
 
@@ -136,6 +137,7 @@ def generate_launch_description():
         executable='hexapod_controller',
         name='hexapod_controller',
         output='screen',
+        parameters=[{'use_sim_time': True}],
         # Debugging options
         # prefix=['gdbserver localhost:3000'],  
         #arguments=["--ros-args", "--log-level", "debug"]
