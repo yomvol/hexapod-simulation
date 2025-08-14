@@ -53,7 +53,7 @@ public:
     /// IMPORTANT: returned position is local to coxa frame!!!
     /// @param leg_id The ID of the leg (0-5)
     /// @return The position of the leg endpoint in the body frame
-    Eigen::Vector3d getLegEndpoint() {
+    Eigen::Vector3d getLegEndpoint(int leg_id) {
         auto endpoint_pos = computeLegFK({0, 0, 0});
         return {endpoint_pos.x, endpoint_pos.y, endpoint_pos.z};
     }
@@ -87,9 +87,6 @@ public:
     const double FEMUR_LENGTH = dh_params_.a2;
     const double TIBIA_LENGTH = dh_params_.a3;
     const double Z_OFFSET = 0.18; // vertical offset from ground to coxa
-
-    /// @brief Transform a point using Eigen transform
-    Vec3 transformPoint(const Vec3& point, const Eigen::Isometry3d& transform) const;
 
     /// @brief Converts Denavit-Hartenberg parameters to a transformation matrix
     /// @param theta Joint angle
