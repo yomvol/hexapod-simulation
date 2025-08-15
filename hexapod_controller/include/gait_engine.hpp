@@ -25,19 +25,17 @@ public:
     GaitEngine(int cycle_duration);
 
     /// @brief Computes one point of the given leg's trajectory, if the computed point is unreachable, returns std::nullopt
-    /// @param leg_id The ID of the leg (1-6)
+    /// @param leg_id The ID of the leg (0-5)
     /// @param time The time at which to compute the IK
     /// @return The joint angles for the leg
     std::optional<std::vector<double>> getLegTrajectoryPoint(int leg_id, double time);
 
     /// @brief Computes one point of the given leg's trajectory, if the computed point is unreachable, returns std::nullopt
-    /// @param leg_id The ID of the leg (1-6)
+    /// @param leg_id The ID of the leg (0-5)
     /// @param time The time at which to compute the IK
     /// @param foot_pos_global Position of the foot in body frame, pass this argument for visualization purposes 
     /// @return The joint angles for the leg
     std::optional<std::vector<double>> getLegTrajectoryPoint(int leg_id, double time, Vec3& foot_pos_global);
-
-    Vec3 computeFootPosition(int leg_id, double time);
 
     /// @brief Computes the forward kinematics for a leg
     /// @param joint_angles The joint angles for the leg
@@ -53,7 +51,7 @@ public:
     /// IMPORTANT: returned position is local to coxa frame!!!
     /// @param leg_id The ID of the leg (0-5)
     /// @return The position of the leg endpoint in the body frame
-    Eigen::Vector3d getLegEndpoint(int leg_id) {
+    Eigen::Vector3d getLegEndpoint() {
         auto endpoint_pos = computeLegFK({0, 0, 0});
         return {endpoint_pos.x, endpoint_pos.y, endpoint_pos.z};
     }
@@ -79,7 +77,7 @@ public:
     LegTransformMatrix leg_transforms_[6]; // Transform matrices for each leg
     double cycle_duration_ = 0.0; // Duration of one gait cycle in seconds
 
-    const double STRIDE_LENGTH = 0.06; // 8 cm stride
+    const double STRIDE_LENGTH = 0.04; // 8 cm stride
     const double STEP_HEIGHT = 0.04; // 4 cm step lift
     const double DUTY_CYCLE = 0.5; // stance 50%, swing 50%
 
@@ -102,4 +100,6 @@ public:
     std::optional<std::array<double, 3>> computeLegIK(Vec3 leg_tip_position);
 
     double getLegPhaseOffset(int leg_id) const;
+
+    Vec3 computeFootPosition(int leg_id, double time);
 };

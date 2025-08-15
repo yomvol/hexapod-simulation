@@ -154,7 +154,7 @@ private:
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   bool leg_frames_initialized_ = false;
-  std::chrono::seconds GAIT_CYCLE_DURATION{1}; // time it takes for one full step with swing and stance
+  std::chrono::seconds GAIT_CYCLE_DURATION{2}; // time it takes for one full step with swing and stance
   int TRAJ_POINTS_PER_CYCLE = 100;
   std::array<Leg, 6> legs_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr wake_srv_;
