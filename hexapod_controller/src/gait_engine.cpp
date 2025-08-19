@@ -12,13 +12,6 @@ void GaitEngine::setLegFrames(int leg_id, const Eigen::Isometry3d& body_to_coxa)
     leg_transforms_[leg_id].body_to_coxa = body_to_coxa;
 }
 
-Vec3 GaitEngine::transformPoint(const Vec3& point, const Eigen::Isometry3d& transform) const {
-    Eigen::Vector3d eigen_point(point.x, point.y, point.z);
-    Eigen::Vector3d transformed = transform * eigen_point;
-    
-    return {transformed.x(), transformed.y(), transformed.z()};
-}
-
 Eigen::Matrix4d GaitEngine::dhToTransform(double theta, double d, double a, double alpha) {
     Eigen::Matrix4d T;
 
@@ -41,8 +34,9 @@ double GaitEngine::getLegPhaseOffset(int leg_id) const{
 Vec3 GaitEngine::computeFootPosition(int leg_id, double time){
     Vec3 relative_stride;
     relative_stride.y = 0.0;
-    const double phase_offset = getLegPhaseOffset(leg_id - 1);
+    const double phase_offset = getLegPhaseOffset(leg_id);
     double gait_phase = fmod(time / cycle_duration_ + phase_offset, 1.0);
+    int sign = (leg_id < 3) ? 1 : -1;
 
     if (gait_phase < DUTY_CYCLE) {
         // stance phase
@@ -53,16 +47,41 @@ Vec3 GaitEngine::computeFootPosition(int leg_id, double time){
         // swing phase
         double s = (gait_phase - DUTY_CYCLE) / (1.0 - DUTY_CYCLE); // parameter normalized [0.0, 1.0]
         relative_stride.x = STRIDE_LENGTH * (s - 1); // from -STRIDE_LENGTH to 0
-
-        relative_stride.y = 0.08 * sin(M_PI * s); // lateral sway is needed, otherwise tibia doesn't have enough space
+        //double lateral_sway = leg_id == 1 || leg_id == 4 ? 0.02 : 0.03;
+        //relative_stride.y = sign * lateral_sway * sin(M_PI * s); // lateral sway is needed, otherwise tibia doesn't have enough space
         relative_stride.z = STEP_HEIGHT * sin(M_PI * s); // nice smooth arc
     }
+    //if (leg_id == 0 || leg_id == 5 || leg_id == 1 || leg_id == 4) relative_stride.y += sign * 0.02;
+    if (leg_id == 3 || leg_id == 2) relative_stride.x += 0.03;
+    if (leg_id == 0 || leg_id == 5) relative_stride.x -= 0.03;
 
     Eigen::Vector3d foot_pos_local_to_coxa = getLegEndpoint(); // relative to coxa frame, Z up (joint axis), x along the leg, y to the side (global coords 0.23, 0.17, -0.18)
     Eigen::Vector3d offset = Eigen::Vector3d(relative_stride.x, relative_stride.y, relative_stride.z);
-    Eigen::Matrix3d rotation_matrix = Eigen::AngleAxisd(-M_PI / 4, Eigen::Vector3d::UnitZ()).toRotationMatrix();
-    Eigen::Vector3d debug = rotation_matrix * offset;
-    auto foot_pos_aligned = foot_pos_local_to_coxa + debug;
+    double angle = 0.0;
+    switch (leg_id) {
+        case 0:
+            angle = -M_PI / 4;
+            break;
+        case 1:
+            angle = -M_PI / 2;
+            break;
+        case 2:
+            angle = -3 * M_PI / 4;
+            break;
+        case 3:
+            angle = 3 * M_PI / 4;
+            break;
+        case 4:
+            angle = M_PI / 2;
+            break;
+        case 5:
+            angle = M_PI / 4;
+            break;
+        default:
+            throw std::invalid_argument("Invalid leg ID: " + std::to_string(leg_id));
+    }
+    Eigen::Matrix3d rotation_matrix = Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+    auto foot_pos_aligned = foot_pos_local_to_coxa + rotation_matrix * offset;
     return Vec3(foot_pos_aligned(0), foot_pos_aligned(1), foot_pos_aligned(2));
 }
 
@@ -92,7 +111,7 @@ std::optional<std::vector<double>> GaitEngine::getLegTrajectoryPoint(int leg_id,
 
     // apply the coordinate transformation
     T_global = R_correction * T_local * R_correction.inverse();
-    auto pos = leg_transforms_[leg_id - 1].body_to_coxa.matrix() * T_global;
+    auto pos = leg_transforms_[leg_id].body_to_coxa.matrix() * T_global;
     foot_pos_global.x = pos(0, 3);
     foot_pos_global.y = pos(1, 3);
     foot_pos_global.z = pos(2, 3);
@@ -130,20 +149,24 @@ std::optional<std::array<double, 3>> GaitEngine::computeLegIK(Vec3 leg_tip_posit
     double l = sqrt((Z_OFFSET - leg_tip_position.z) * (Z_OFFSET - leg_tip_position.z)
     + (leg_tip_position.x - COXA_LENGTH) * (leg_tip_position.x - COXA_LENGTH));
 
+    // angles theta2 and theta3 are computed in the plane of the leg (coxa to endpoint)
+    // r is the distance from the coxa to the endpoint in the XY plane
+    double r = sqrt(leg_tip_position.x * leg_tip_position.x + leg_tip_position.y * leg_tip_position.y);
+
     // check if target is reachable
     double max_reach = FEMUR_LENGTH + TIBIA_LENGTH;
     if (l > max_reach) return std::nullopt;
 
-    double alpha = atan2(Z_OFFSET - leg_tip_position.z, leg_tip_position.x - COXA_LENGTH);
+    double alpha = atan2(Z_OFFSET - leg_tip_position.z, r - COXA_LENGTH);
 
     double cos_beta = (FEMUR_LENGTH * FEMUR_LENGTH - TIBIA_LENGTH * TIBIA_LENGTH + l * l) / (2 * FEMUR_LENGTH * l);
     //cos_beta = std::max(-1.0, std::min(1.0, cos_beta)); // clamp to [-1, 1] to avoid NaN
     double beta = acos(cos_beta);
-    double theta2 = (alpha + beta - 110.4948 * M_PI / 180.0); // don't touch magic numbers lol -110.4948
+    double theta2 = M_PI - (alpha + beta); // don't touch magic numbers lol -110.4948
 
     double cos_theta3 = (FEMUR_LENGTH * FEMUR_LENGTH + TIBIA_LENGTH * TIBIA_LENGTH - l * l) / (2 * TIBIA_LENGTH * FEMUR_LENGTH);
     //cos_theta3 = std::max(-1.0, std::min(1.0, cos_theta3)); // clamp to [-1, 1] to avoid NaN
-    double theta3 = acos(cos_theta3) - 114.0014 * M_PI / 180.0;
+    double theta3 = M_PI/2 - acos(cos_theta3); // -114.0014
 
     std::array<double, 3> joint_angles = {theta1, theta2, theta3};
     return joint_angles;

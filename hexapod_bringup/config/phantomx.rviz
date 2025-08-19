@@ -10,8 +10,12 @@ Panels:
         - /RobotModel1
         - /RobotModel1/Description Topic1
         - /Marker1
-        - /Marker1/Status1
         - /Marker1/Topic1
+        - /Marker2
+        - /Marker3
+        - /Marker4
+        - /Marker5
+        - /Marker6
       Splitter Ratio: 0.5
     Tree Height: 542
   - Class: rviz_common/Selection
@@ -212,14 +216,79 @@ Visualization Manager:
       Enabled: true
       Name: Marker
       Namespaces:
-        "": true
+        leg1: true
       Topic:
         Depth: 5
         Durability Policy: Volatile
         Filter size: 10
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /visualization_marker
+        Value: /leg1/visualization_marker
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        leg2: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /leg2/visualization_marker
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        leg3: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /leg3/visualization_marker
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        leg4: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /leg4/visualization_marker
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        leg5: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /leg5/visualization_marker
+      Value: true
+    - Class: rviz_default_plugins/Marker
+      Enabled: true
+      Name: Marker
+      Namespaces:
+        leg6: true
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /leg6/visualization_marker
       Value: true
   Enabled: true
   Global Options:
@@ -267,7 +336,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 1.8055471181869507
+      Distance: 1.1443538665771484
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -282,10 +351,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.5247970819473267
+      Pitch: 0.4347975254058838
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 0.885426938533783
+      Yaw: 6.223593711853027
     Saved: ~
 Window Geometry:
   Displays:

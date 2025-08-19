@@ -12,6 +12,7 @@
 #include <tf2_eigen/tf2_eigen.hpp>
 #include <chrono>
 #include <visualization_msgs/msg/marker.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
 #include <geometry_msgs/msg/twist.hpp>
 #include <std_srvs/srv/trigger.hpp>
 #include <array>
@@ -133,11 +134,10 @@ public:
       std::vector<double> velocities; // angular velocities for each joint rad/s
       rclcpp::Duration relative_time_from_start; // time from the start of the trajectory
       Vec3 leg_tip_position_global;
-
       TrajectoryPoint();
   };
 
-  struct Leg{
+  struct Leg {
     std::string name;
     rclcpp_action::Client<FollowJointTrajectory>::SharedPtr leg_client;
     rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub;
@@ -160,6 +160,8 @@ private:
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr wake_srv_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   int num_of_legs_in_action_ = 0;
+  rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
+  sensor_msgs::msg::JointState::SharedPtr last_joint_state_;
 
   void prepareLegTrajectories();
   void updateGaitCycle();

@@ -1,6 +1,16 @@
 controller_manager:
   ros__parameters:
-    update_rate: 1000 # 50 Hz (reduced from 100 Hz for better compatibility)
+    update_rate: 100 # 50 Hz (reduced from 100 Hz for better compatibility)
+
+    allow_nonzero_velocity_at_trajectory_end: false
+    allow_partial_joints_goal: false
+    goal_tolerance: 0.01
+    goal_time_tolerance: 0.0
+    interpolate_from_desired_state: false
+    action_monitor_rate : 20.0
+    constraints:
+      stopped_velocity_tolerance: 0.1
+      goal_time: 0.1
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
@@ -35,11 +45,7 @@ leg1_controller:
     state_interfaces:
       - position
       - velocity
-    allow_nonzero_velocity_at_trajectory_end: true
 
-    allow_partial_joints_goal: false
-    goal_tolerance: 0.01
-    interpolate_from_desired_state: false
     # constraints:
     #   stopped_velocity_tolerance: 0.01
     #   goal_time: 0.0
@@ -61,10 +67,10 @@ leg2_controller:
       - joint_2_3
     command_interfaces:
       - position
+      - velocity
     state_interfaces:
       - position
       - velocity
-    allow_nonzero_velocity_at_trajectory_end: true
 
 leg3_controller:
   ros__parameters:
@@ -74,10 +80,10 @@ leg3_controller:
       - joint_3_3
     command_interfaces:
       - position
+      - velocity
     state_interfaces:
       - position
       - velocity
-    allow_nonzero_velocity_at_trajectory_end: true
 
 leg4_controller:
   ros__parameters:
@@ -87,10 +93,10 @@ leg4_controller:
       - joint_4_3
     command_interfaces:
       - position
+      - velocity
     state_interfaces:
       - position
       - velocity
-    allow_nonzero_velocity_at_trajectory_end: true
 
 leg5_controller:
   ros__parameters:
@@ -100,10 +106,10 @@ leg5_controller:
       - joint_5_3
     command_interfaces:
       - position
+      - velocity
     state_interfaces:
       - position
       - velocity
-    allow_nonzero_velocity_at_trajectory_end: true
 
 leg6_controller:
   ros__parameters:
@@ -113,7 +119,7 @@ leg6_controller:
       - joint_6_3
     command_interfaces:
       - position
+      - velocity
     state_interfaces:
       - position
       - velocity
-    allow_nonzero_velocity_at_trajectory_end: true
