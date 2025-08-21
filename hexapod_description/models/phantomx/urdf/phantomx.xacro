@@ -9,10 +9,12 @@
     </hardware>
     <xacro:macro name="joint" params="leg_number joint_number">
       <joint name="joint_${leg_number}_${joint_number}">
-        <command_interface name="position"/>  <!-- controlling joint positions -->
-        <command_interface name="velocity"/>  <!-- controlling joint velocities -->
+        <command_interface name="effort">
+          <param name="min">-0.5</param>
+          <param name="max">0.5</param>
+        </command_interface>
         <state_interface name="position"/>
-        <state_interface name="velocity"/>    
+        <state_interface name="velocity"/>
       </joint>
     </xacro:macro>
     
@@ -56,33 +58,4 @@
       <parameters>$(find hexapod_description)/control/controller_manager.yaml</parameters>
     </plugin>
   </gazebo>
-
-  <xacro:macro name="gazebo_joint" params="leg_number joint_number">
-    <gazebo reference="joint_${leg_number}_${joint_number}">
-      <provideFeedback>true</provideFeedback>
-      <dynamics>
-        <damping>0.1</damping>
-        <friction>0.0</friction>
-      </dynamics>
-    </gazebo>
-  </xacro:macro>
-
-  <xacro:gazebo_joint leg_number="1" joint_number="1"/>
-  <xacro:gazebo_joint leg_number="1" joint_number="2"/>
-  <xacro:gazebo_joint leg_number="1" joint_number="3"/>
-  <xacro:gazebo_joint leg_number="2" joint_number="1"/>
-  <xacro:gazebo_joint leg_number="2" joint_number="2"/>
-  <xacro:gazebo_joint leg_number="2" joint_number="3"/>
-  <xacro:gazebo_joint leg_number="3" joint_number="1"/>
-  <xacro:gazebo_joint leg_number="3" joint_number="2"/> 
-  <xacro:gazebo_joint leg_number="3" joint_number="3"/>
-  <xacro:gazebo_joint leg_number="4" joint_number="1"/>
-  <xacro:gazebo_joint leg_number="4" joint_number="2"/>
-  <xacro:gazebo_joint leg_number="4" joint_number="3"/>
-  <xacro:gazebo_joint leg_number="5" joint_number="1"/>
-  <xacro:gazebo_joint leg_number="5" joint_number="2"/>
-  <xacro:gazebo_joint leg_number="5" joint_number="3"/>
-  <xacro:gazebo_joint leg_number="6" joint_number="1"/>
-  <xacro:gazebo_joint leg_number="6" joint_number="2"/>
-  <xacro:gazebo_joint leg_number="6" joint_number="3"/>
 </robot>

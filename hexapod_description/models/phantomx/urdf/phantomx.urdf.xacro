@@ -6,11 +6,12 @@
     <child link="body"/>
   </joint>
   <joint name="joint_1_1" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="-3.14147 -1.57071 -0.78578" xyz="0.12480 0.06164 0.00112"/>
     <parent link="body"/>
     <child link="coxa1_lf"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_3_coxa" type="fixed">
     <origin rpy="-0.00010 1.57040 3.14149" xyz="0.00000 -0.05400 0.00000"/>
@@ -18,25 +19,28 @@
     <child link="coxa2_lr"/>
   </joint>
   <joint name="joint_3_2" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="3.14159 0.00000 0.00000" xyz="-0.00000 -0.00000 0.00000"/>
     <parent link="coxa2_lr"/>
     <child link="femur_lr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_3_3" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="-1.57070 -0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
     <parent link="femur_lr"/>
     <child link="tibia_lr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_4_1" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="-3.14147 -1.57071 2.35633" xyz="-0.12480 -0.06164 0.00112"/>
     <parent link="body"/>
     <child link="coxa1_rr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_4_coxa" type="fixed">
     <origin rpy="0.00043 1.57040 -3.14117" xyz="-0.00000 -0.05400 0.00000"/>
@@ -44,25 +48,28 @@
     <child link="coxa2_rr"/>
   </joint>
   <joint name="joint_4_2" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="3.14159 -0.00000 0.00000" xyz="0.00000 0.00000 -0.00000"/>
     <parent link="coxa2_rr"/>
     <child link="femur_rr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_4_3" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="-1.57070 0.00000 3.14159" xyz="0.00000 -0.06450 -0.01450"/>
     <parent link="femur_rr"/>
     <child link="tibia_rr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_5_1" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="3.14159 -1.57071 3.14159" xyz="0.00000 -0.10340 0.00112"/>
     <parent link="body"/>
     <child link="coxa1_rm"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_5_coxa" type="fixed">
     <origin rpy="-0.00000 1.57040 3.14159" xyz="0.00000 -0.05400 0.00000"/>
@@ -70,11 +77,12 @@
     <child link="coxa2_rm"/>
   </joint>
   <joint name="joint_5_2" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="3.14159 -0.00000 0.00000" xyz="-0.00000 0.00000 -0.00000"/>
     <parent link="coxa2_rm"/>
     <child link="femur_rm"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_1_coxa" type="fixed">
     <origin rpy="0.00011 1.57040 -3.14149" xyz="-0.00000 -0.05400 -0.00000"/>
@@ -82,18 +90,20 @@
     <child link="coxa2_lf"/>
   </joint>
   <joint name="joint_5_3" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="-1.57070 0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
     <parent link="femur_rm"/>
     <child link="tibia_rm"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_6_1" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="3.14147 -1.57071 -2.35633" xyz="0.12480 -0.06164 0.00112"/>
     <parent link="body"/>
     <child link="coxa1_rf"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_6_coxa" type="fixed">
     <origin rpy="-0.00042 1.57040 3.14117" xyz="0.00000 -0.05400 -0.00000"/>
@@ -101,39 +111,44 @@
     <child link="coxa2_rf"/>
   </joint>
   <joint name="joint_6_2" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="3.14159 -0.00000 -0.00000" xyz="-0.00000 0.00000 0.00000"/>
     <parent link="coxa2_rf"/>
     <child link="femur_rf"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_6_3" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="-1.57070 0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
     <parent link="femur_rf"/>
     <child link="tibia_rf"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_1_2" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="3.14159 0.00000 0.00000" xyz="0.00000 0.00000 -0.00000"/>
     <parent link="coxa2_lf"/>
     <child link="femur_lf"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_1_3" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="-1.57070 0.00000 3.14159" xyz="0.00000 -0.06450 -0.01450"/>
     <parent link="femur_lf"/>
     <child link="tibia_lf"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_2_1" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="-3.14159 -1.57071 -0.00000" xyz="0.00000 0.10340 0.00112"/>
     <parent link="body"/>
     <child link="coxa1_lm"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_2_coxa" type="fixed">
     <origin rpy="-0.00000 1.57040 3.14159" xyz="-0.00000 -0.05400 -0.00000"/>
@@ -141,25 +156,28 @@
     <child link="coxa2_lm"/>
   </joint>
   <joint name="joint_2_2" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="3.14159 0.00000 -0.00000" xyz="-0.00000 0.00000 -0.00000"/>
     <parent link="coxa2_lm"/>
     <child link="femur_lm"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_2_3" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="-1.57070 0.00000 3.14159" xyz="-0.00000 -0.06450 -0.01450"/>
     <parent link="femur_lm"/>
     <child link="tibia_lm"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <joint name="joint_3_1" type="revolute">
-    <limit lower="-2.61799" upper="2.61799" effort="2.80000" velocity="5.65487"/>
+    <limit lower="-2.61799" upper="2.61799" effort="2.8" velocity="5.65487"/>
     <origin rpy="3.14147 -1.57071 0.78578" xyz="-0.12480 0.06164 0.00112"/>
     <parent link="body"/>
     <child link="coxa1_lr"/>
     <axis xyz="1.00000 0.00000 0.00000"/>
+    <dynamics damping="0.05" friction="0.0"/>
   </joint>
   <link name="base_link"/>
   <link name="body">

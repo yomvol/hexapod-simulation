@@ -144,6 +144,7 @@ public:
     visualization_msgs::msg::Marker marker;
     trajectory_msgs::msg::JointTrajectory trajectory;
     bool leg_action_in_progress = false;
+    rclcpp::Time action_start_time;
   };
 
   HexapodControllerNode();
@@ -156,6 +157,7 @@ private:
   bool leg_frames_initialized_ = false;
   std::chrono::seconds GAIT_CYCLE_DURATION{2}; // time it takes for one full step with swing and stance
   int TRAJ_POINTS_PER_CYCLE = 100;
+  double ERROR_TOLERANCE = 0.05; // error tolerance for leg actions
   std::array<Leg, 6> legs_;
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr wake_srv_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;

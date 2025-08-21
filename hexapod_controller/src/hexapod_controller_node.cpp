@@ -120,15 +120,15 @@ void HexapodControllerNode::prepareLegTrajectories() {
         point.leg_tip_position_global = leg_tip_pos;
         trajectory_points.push_back(point);
 
-        RCLCPP_INFO(this->get_logger(), "%s IK joint angles at time %.2f: theta1=%.2f (%.2f), theta2=%.2f (%.2f), theta3=%.2f (%.2f)",
-                    leg_name.c_str(),
-                    relative_time.seconds(),
-                    joint_angles.value()[0],
-                    joint_angles.value()[0] * 180.0 / M_PI,
-                    joint_angles.value()[1], 
-                    joint_angles.value()[1] * 180.0 / M_PI,
-                    joint_angles.value()[2], 
-                    joint_angles.value()[2] * 180.0 / M_PI);
+        // RCLCPP_INFO(this->get_logger(), "%s IK joint angles at time %.2f: theta1=%.2f (%.2f), theta2=%.2f (%.2f), theta3=%.2f (%.2f)",
+        //             leg_name.c_str(),
+        //             relative_time.seconds(),
+        //             joint_angles.value()[0],
+        //             joint_angles.value()[0] * 180.0 / M_PI,
+        //             joint_angles.value()[1], 
+        //             joint_angles.value()[1] * 180.0 / M_PI,
+        //             joint_angles.value()[2], 
+        //             joint_angles.value()[2] * 180.0 / M_PI);
       }
 
       double dt = (GAIT_CYCLE_DURATION.count()) / static_cast<double>(TRAJ_POINTS_PER_CYCLE);
@@ -178,11 +178,11 @@ void HexapodControllerNode::prepareLegTrajectories() {
         leg_tip_point.point.z = p.leg_tip_position_global.z;
         legs_[leg_id].marker.points.push_back(leg_tip_point.point);
 
-        RCLCPP_INFO(this->get_logger(), (leg_name + " tip position at time %.2f: (%.2f, %.2f, %.2f)").c_str(),
-                    p.relative_time_from_start.seconds(),
-                    p.leg_tip_position_global.x,
-                    p.leg_tip_position_global.y,
-                    p.leg_tip_position_global.z);
+        // RCLCPP_INFO(this->get_logger(), (leg_name + " tip position at time %.2f: (%.2f, %.2f, %.2f)").c_str(),
+        //             p.relative_time_from_start.seconds(),
+        //             p.leg_tip_position_global.x,
+        //             p.leg_tip_position_global.y,
+        //             p.leg_tip_position_global.z);
       }
 
       if (traj.points.empty()) {
@@ -272,13 +272,14 @@ void HexapodControllerNode::startWalkCycle() {
 
   RCLCPP_INFO(this->get_logger(), "Starting walk cycle...");
   num_of_legs_in_action_ = 6;
-  auto start_time = this->now() + 0.1s; // start after 100ms delay
+  auto start_time = this->now() + 100ms; // start after 100ms delay
   auto joint_state = last_joint_state_;
 
   for (int leg_id = 0; leg_id < 6; ++leg_id) {
     auto & leg = legs_[leg_id];
     FollowJointTrajectory::Goal goal_msg;
     leg.marker_pub->publish(leg.marker); // publish marker for visualization
+    leg.action_start_time = this->now();
     auto fresh_traj = leg.trajectory;
     fresh_traj.header.stamp = start_time;
 
@@ -304,6 +305,30 @@ void HexapodControllerNode::startWalkCycle() {
         RCLCPP_INFO(this->get_logger(), "Goal accepted by server, waiting for result");
       }
     };
+
+    send_goal_options.feedback_callback = [this, leg_id](GoalHandle::SharedPtr goal_handle, const std::shared_ptr<const control_msgs::action::FollowJointTrajectory::Feedback> feedback) {
+      auto time_from_start = this->now() - legs_[leg_id].action_start_time;
+
+      if (time_from_start.seconds() >= GAIT_CYCLE_DURATION.count()) {
+        RCLCPP_WARN(this->get_logger(), "Leg %d action timed out after %.2f seconds", leg_id + 1, time_from_start.seconds());
+        legs_[leg_id].leg_action_in_progress = false;
+        legs_[leg_id].leg_client->async_cancel_goal(goal_handle);
+
+        num_of_legs_in_action_--;
+        if (num_of_legs_in_action_ <= 0) {
+          RCLCPP_INFO(this->get_logger(), "All legs have completed their actions.");
+          for (auto & leg : legs_) {
+            leg.leg_action_in_progress = false;
+          }
+          startWalkCycle();
+        }
+      }
+      // if (feedback->error.positions[1] <= ERROR_TOLERANCE &&
+      //     feedback->error.positions[2] <= ERROR_TOLERANCE) {
+      //   legs_[leg_id].leg_action_in_progress = false;
+      //   legs_[leg_id].leg_client->async_cancel_goal(goal_handle);
+      // }
+    };
     
     send_goal_options.result_callback = [this, leg_id](const GoalHandle::WrappedResult &result) {
       if (result.code != rclcpp_action::ResultCode::SUCCEEDED) {
@@ -311,6 +336,8 @@ void HexapodControllerNode::startWalkCycle() {
         RCLCPP_WARN(this->get_logger(), "Reason: %d", static_cast<int>(result.code));
       } else {
         RCLCPP_INFO(this->get_logger(), "Leg action completed successfully.");
+        rclcpp::Duration action_duration = this->now() - legs_[leg_id].action_start_time;
+        RCLCPP_INFO(this->get_logger(), "Leg %d action duration: %.2f seconds", leg_id + 1, action_duration.seconds());
         num_of_legs_in_action_--;
         if (num_of_legs_in_action_ <= 0) {
           RCLCPP_INFO(this->get_logger(), "All legs have completed their actions.");
@@ -342,55 +369,6 @@ void HexapodControllerNode::cancelLegActions() {
         }
     }
 }
-
-// void HexapodControllerNode::updateGaitCycle() {
-//     if (!leg_frames_initialized_) {
-//       RCLCPP_DEBUG(this->get_logger(), "Waiting for leg frames to be initialized...");
-//       return;
-//     }
-
-//     if (!leg1_client_->wait_for_action_server(1s)) {
-//       RCLCPP_WARN(this->get_logger(), "Leg1 controller not ready.");
-//       return;
-//     }
-
-//     // Don't send new action if one is already in progress
-//     if (leg1_action_in_progress_) {
-//       RCLCPP_INFO(this->get_logger(), "Leg1 action still in progress, skipping new goal.");
-//       return;
-//     }
-
-//     //marker_.points.clear();
-
-//     marker_pub_->publish(marker_);
-    
-//     // send as a goal
-//     FollowJointTrajectory::Goal goal_msg;
-//     goal_msg.trajectory = traj;
-
-//     auto send_goal_options = rclcpp_action::Client<FollowJointTrajectory>::SendGoalOptions();
-//     send_goal_options.goal_response_callback = [this](const GoalHandle::SharedPtr & goal_handle) {
-//       if (!goal_handle) {
-//         RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
-//         leg1_action_in_progress_ = false;
-//       } else {
-//         RCLCPP_INFO(this->get_logger(), "Goal accepted by server, waiting for result");
-//       }
-//     };
-    
-//     send_goal_options.result_callback = [this](const GoalHandle::WrappedResult &result) {
-//       leg1_action_in_progress_ = false;
-//       if (result.code != rclcpp_action::ResultCode::SUCCEEDED) {
-//         RCLCPP_WARN(this->get_logger(), "Leg1 gait cycle action failed.");
-//         RCLCPP_WARN(this->get_logger(), "Reason: %d", static_cast<int>(result.code));
-//       } else {
-//         RCLCPP_INFO(this->get_logger(), "Leg1 gait cycle completed successfully.");
-//       }
-//     };
-
-//     leg1_action_in_progress_ = true;
-//     leg1_client_->async_send_goal(goal_msg, send_goal_options);
-// }
 
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);

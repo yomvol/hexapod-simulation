@@ -47,13 +47,12 @@ Vec3 GaitEngine::computeFootPosition(int leg_id, double time){
         // swing phase
         double s = (gait_phase - DUTY_CYCLE) / (1.0 - DUTY_CYCLE); // parameter normalized [0.0, 1.0]
         relative_stride.x = STRIDE_LENGTH * (s - 1); // from -STRIDE_LENGTH to 0
-        //double lateral_sway = leg_id == 1 || leg_id == 4 ? 0.02 : 0.03;
-        //relative_stride.y = sign * lateral_sway * sin(M_PI * s); // lateral sway is needed, otherwise tibia doesn't have enough space
+        double lateral_sway = leg_id == 1 || leg_id == 4 ? 0.02 : 0.04;
+        relative_stride.y = sign * lateral_sway * sin(M_PI * s); // lateral sway is needed, otherwise tibia doesn't have enough space
         relative_stride.z = STEP_HEIGHT * sin(M_PI * s); // nice smooth arc
     }
-    //if (leg_id == 0 || leg_id == 5 || leg_id == 1 || leg_id == 4) relative_stride.y += sign * 0.02;
-    if (leg_id == 3 || leg_id == 2) relative_stride.x += 0.03;
-    if (leg_id == 0 || leg_id == 5) relative_stride.x -= 0.03;
+    if (leg_id == 0 || leg_id == 5) relative_stride.y += sign * 0.02;
+    if (leg_id == 2 || leg_id == 3) relative_stride.x += 0.02;
 
     Eigen::Vector3d foot_pos_local_to_coxa = getLegEndpoint(); // relative to coxa frame, Z up (joint axis), x along the leg, y to the side (global coords 0.23, 0.17, -0.18)
     Eigen::Vector3d offset = Eigen::Vector3d(relative_stride.x, relative_stride.y, relative_stride.z);
@@ -162,11 +161,13 @@ std::optional<std::array<double, 3>> GaitEngine::computeLegIK(Vec3 leg_tip_posit
     double cos_beta = (FEMUR_LENGTH * FEMUR_LENGTH - TIBIA_LENGTH * TIBIA_LENGTH + l * l) / (2 * FEMUR_LENGTH * l);
     //cos_beta = std::max(-1.0, std::min(1.0, cos_beta)); // clamp to [-1, 1] to avoid NaN
     double beta = acos(cos_beta);
-    double theta2 = M_PI - (alpha + beta); // don't touch magic numbers lol -110.4948
+    //double theta2 = M_PI - (alpha + beta); // don't touch magic numbers lol -110.4948
+    double theta2 = alpha + beta -110.4948 * M_PI / 180.0;
 
     double cos_theta3 = (FEMUR_LENGTH * FEMUR_LENGTH + TIBIA_LENGTH * TIBIA_LENGTH - l * l) / (2 * TIBIA_LENGTH * FEMUR_LENGTH);
     //cos_theta3 = std::max(-1.0, std::min(1.0, cos_theta3)); // clamp to [-1, 1] to avoid NaN
-    double theta3 = M_PI/2 - acos(cos_theta3); // -114.0014
+    //double theta3 = M_PI/2 - acos(cos_theta3); // -114.0014
+    double theta3 = acos(cos_theta3) - 114.0014 * M_PI / 180.0;
 
     std::array<double, 3> joint_angles = {theta1, theta2, theta3};
     return joint_angles;

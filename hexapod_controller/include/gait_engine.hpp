@@ -77,8 +77,8 @@ public:
     LegTransformMatrix leg_transforms_[6]; // Transform matrices for each leg
     double cycle_duration_ = 0.0; // Duration of one gait cycle in seconds
 
-    const double STRIDE_LENGTH = 0.02; // 8 cm stride
-    const double STEP_HEIGHT = 0.01; // 4 cm step lift
+    const double STRIDE_LENGTH = 0.04; // 8 cm stride
+    const double STEP_HEIGHT = 0.02; // 4 cm step lift
     const double DUTY_CYCLE = 0.5; // stance 50%, swing 50%
 
     const double COXA_LENGTH = dh_params_.a1;

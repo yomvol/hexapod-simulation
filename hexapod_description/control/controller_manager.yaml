@@ -1,16 +1,15 @@
 controller_manager:
   ros__parameters:
-    update_rate: 100 # 50 Hz (reduced from 100 Hz for better compatibility)
+    update_rate: 1000 # 50 Hz (reduced from 100 Hz for better compatibility)
 
-    allow_nonzero_velocity_at_trajectory_end: false
+    allow_nonzero_velocity_at_trajectory_end: true
     allow_partial_joints_goal: false
-    goal_tolerance: 0.01
-    goal_time_tolerance: 0.0
     interpolate_from_desired_state: false
     action_monitor_rate : 20.0
+    # hold_position: true
     constraints:
       stopped_velocity_tolerance: 0.1
-      goal_time: 0.1
+      goal_time: 0.0
 
     joint_state_broadcaster:
       type: joint_state_broadcaster/JointStateBroadcaster
@@ -40,24 +39,41 @@ leg1_controller:
       - joint_1_2
       - joint_1_3
     command_interfaces:
-      - position
-      - velocity
+      - effort
     state_interfaces:
       - position
       - velocity
 
-    # constraints:
-    #   stopped_velocity_tolerance: 0.01
-    #   goal_time: 0.0
-    #   joint_1_1:
-    #     trajectory: 0.6
-    #     goal: 0.03
-    #   joint_1_2:
-    #     trajectory: 0.6
-    #     goal: 0.03
-    #   joint_1_3:
-    #     trajectory: 0.6
-    #     goal: 0.03
+    gains:
+      joint_1_1:
+        p: 500.0
+        i: 0.01
+        d: 0.01
+        i_clamp: 0.0
+        antiwindup: true
+      joint_1_2:
+        p: 500.0
+        i: 0.01
+        d: 0.01
+        i_clamp: 0.0
+        antiwindup: true
+      joint_1_3:
+        p: 500.0
+        i: 0.01
+        d: 0.01
+        i_clamp: 0.0
+        antiwindup: true
+
+    constraints:
+      joint_1_1:
+        trajectory: 0.5
+        goal: 0.1
+      joint_1_2:
+        trajectory: 0.5
+        goal: 0.1
+      joint_1_3:
+        trajectory: 0.5
+        goal: 0.1
 
 leg2_controller:
   ros__parameters:
@@ -66,11 +82,38 @@ leg2_controller:
       - joint_2_2
       - joint_2_3
     command_interfaces:
-      - position
-      - velocity
+      - effort
     state_interfaces:
       - position
       - velocity
+
+    gains:
+      joint_2_1:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_2_2:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_2_3:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+
+    constraints:
+      joint_2_1:
+        trajectory: 0.5
+        goal: 0.1
+      joint_2_2:
+        trajectory: 0.5
+        goal: 0.1
+      joint_2_3:
+        trajectory: 0.5
+        goal: 0.1
 
 leg3_controller:
   ros__parameters:
@@ -79,11 +122,38 @@ leg3_controller:
       - joint_3_2
       - joint_3_3
     command_interfaces:
-      - position
-      - velocity
+      - effort
     state_interfaces:
       - position
       - velocity
+    
+    gains:
+      joint_3_1:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_3_2:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_3_3:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+
+    constraints:
+      joint_3_1:
+        trajectory: 0.5
+        goal: 0.1
+      joint_3_2:
+        trajectory: 0.5
+        goal: 0.1
+      joint_3_3:
+        trajectory: 0.5
+        goal: 0.1
 
 leg4_controller:
   ros__parameters:
@@ -92,11 +162,38 @@ leg4_controller:
       - joint_4_2
       - joint_4_3
     command_interfaces:
-      - position
-      - velocity
+      - effort
     state_interfaces:
       - position
       - velocity
+
+    gains:
+      joint_4_1:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_4_2:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_4_3:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+
+    constraints:
+      joint_4_1:
+        trajectory: 0.5
+        goal: 0.1
+      joint_4_2:
+        trajectory: 0.5
+        goal: 0.1
+      joint_4_3:
+        trajectory: 0.5
+        goal: 0.1
 
 leg5_controller:
   ros__parameters:
@@ -105,11 +202,38 @@ leg5_controller:
       - joint_5_2
       - joint_5_3
     command_interfaces:
-      - position
-      - velocity
+      - effort
     state_interfaces:
       - position
       - velocity
+
+    gains:
+      joint_5_1:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_5_2:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_5_3:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+
+    constraints:
+      joint_5_1:
+        trajectory: 0.5
+        goal: 0.1
+      joint_5_2:
+        trajectory: 0.5
+        goal: 0.1
+      joint_5_3:
+        trajectory: 0.5
+        goal: 0.1
 
 leg6_controller:
   ros__parameters:
@@ -118,8 +242,35 @@ leg6_controller:
       - joint_6_2
       - joint_6_3
     command_interfaces:
-      - position
-      - velocity
+      - effort
     state_interfaces:
       - position
       - velocity
+
+    gains:
+      joint_6_1:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_6_2:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+      joint_6_3:
+        p: 500.0
+        i: 0.1
+        d: 0.01
+        i_clamp: 0.0
+
+    constraints:
+      joint_6_1:
+        trajectory: 0.5
+        goal: 0.1
+      joint_6_2:
+        trajectory: 0.5
+        goal: 0.1
+      joint_6_3:
+        trajectory: 0.5
+        goal: 0.1
