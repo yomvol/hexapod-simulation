@@ -47,8 +47,7 @@ Vec3 GaitEngine::computeFootPosition(int leg_id, double time){
         // swing phase
         double s = (gait_phase - DUTY_CYCLE) / (1.0 - DUTY_CYCLE); // parameter normalized [0.0, 1.0]
         relative_stride.x = STRIDE_LENGTH * (s - 1); // from -STRIDE_LENGTH to 0
-        double lateral_sway = leg_id == 1 || leg_id == 4 ? 0.02 : 0.04;
-        relative_stride.y = sign * lateral_sway * sin(M_PI * s); // lateral sway is needed, otherwise tibia doesn't have enough space
+        relative_stride.y = sign * LATERAL_SWAY * sin(M_PI * s); // lateral sway is needed, otherwise tibia doesn't have enough space
         relative_stride.z = STEP_HEIGHT * sin(M_PI * s); // nice smooth arc
     }
     if (leg_id == 0 || leg_id == 5) relative_stride.y += sign * 0.02;

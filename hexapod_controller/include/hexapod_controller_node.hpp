@@ -1,6 +1,4 @@
-#ifndef HEXAPOD_CONTROLLER_NODE_HPP
-#define HEXAPOD_CONTROLLER_NODE_HPP
-
+#pragma once
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
 #include <control_msgs/action/follow_joint_trajectory.hpp>
@@ -151,10 +149,13 @@ public:
 
 private:
   rclcpp::TimerBase::SharedPtr init_timer_;
+  rclcpp::TimerBase::SharedPtr node_discovery_timer_;
   std::shared_ptr<GaitEngine> gait_engine_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   bool leg_frames_initialized_ = false;
+  bool is_ready_to_stand = false;
+  bool is_walking_ = false;
   std::chrono::seconds GAIT_CYCLE_DURATION{2}; // time it takes for one full step with swing and stance
   int TRAJ_POINTS_PER_CYCLE = 100;
   double ERROR_TOLERANCE = 0.05; // error tolerance for leg actions
@@ -164,12 +165,11 @@ private:
   int num_of_legs_in_action_ = 0;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
   sensor_msgs::msg::JointState::SharedPtr last_joint_state_;
-
+  
+  void handleNodeDiscovery();
+  void sendRestPose();
   void prepareLegTrajectories();
-  void updateGaitCycle();
   void sendStandPose();
   void startWalkCycle();
   void cancelLegActions();
 };
-
-#endif // HEXAPOD_CONTROLLER_NODE_HPP

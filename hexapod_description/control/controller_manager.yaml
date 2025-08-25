@@ -64,16 +64,16 @@ leg1_controller:
         i_clamp: 0.0
         antiwindup: true
 
-    constraints:
-      joint_1_1:
-        trajectory: 0.5
-        goal: 0.1
-      joint_1_2:
-        trajectory: 0.5
-        goal: 0.1
-      joint_1_3:
-        trajectory: 0.5
-        goal: 0.1
+    # constraints:
+    #   joint_1_1:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_1_2:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_1_3:
+    #     trajectory: 0.5
+    #     goal: 0.1
 
 leg2_controller:
   ros__parameters:
@@ -104,16 +104,16 @@ leg2_controller:
         d: 0.01
         i_clamp: 0.0
 
-    constraints:
-      joint_2_1:
-        trajectory: 0.5
-        goal: 0.1
-      joint_2_2:
-        trajectory: 0.5
-        goal: 0.1
-      joint_2_3:
-        trajectory: 0.5
-        goal: 0.1
+    # constraints:
+    #   joint_2_1:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_2_2:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_2_3:
+    #     trajectory: 0.5
+    #     goal: 0.1
 
 leg3_controller:
   ros__parameters:
@@ -144,16 +144,16 @@ leg3_controller:
         d: 0.01
         i_clamp: 0.0
 
-    constraints:
-      joint_3_1:
-        trajectory: 0.5
-        goal: 0.1
-      joint_3_2:
-        trajectory: 0.5
-        goal: 0.1
-      joint_3_3:
-        trajectory: 0.5
-        goal: 0.1
+    # constraints:
+    #   joint_3_1:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_3_2:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_3_3:
+    #     trajectory: 0.5
+    #     goal: 0.1
 
 leg4_controller:
   ros__parameters:
@@ -184,16 +184,16 @@ leg4_controller:
         d: 0.01
         i_clamp: 0.0
 
-    constraints:
-      joint_4_1:
-        trajectory: 0.5
-        goal: 0.1
-      joint_4_2:
-        trajectory: 0.5
-        goal: 0.1
-      joint_4_3:
-        trajectory: 0.5
-        goal: 0.1
+    # constraints:
+    #   joint_4_1:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_4_2:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_4_3:
+    #     trajectory: 0.5
+    #     goal: 0.1
 
 leg5_controller:
   ros__parameters:
@@ -224,16 +224,16 @@ leg5_controller:
         d: 0.01
         i_clamp: 0.0
 
-    constraints:
-      joint_5_1:
-        trajectory: 0.5
-        goal: 0.1
-      joint_5_2:
-        trajectory: 0.5
-        goal: 0.1
-      joint_5_3:
-        trajectory: 0.5
-        goal: 0.1
+    # constraints:
+    #   joint_5_1:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_5_2:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_5_3:
+    #     trajectory: 0.5
+    #     goal: 0.1
 
 leg6_controller:
   ros__parameters:
@@ -264,13 +264,13 @@ leg6_controller:
         d: 0.01
         i_clamp: 0.0
 
-    constraints:
-      joint_6_1:
-        trajectory: 0.5
-        goal: 0.1
-      joint_6_2:
-        trajectory: 0.5
-        goal: 0.1
-      joint_6_3:
-        trajectory: 0.5
-        goal: 0.1
+    # constraints:
+    #   joint_6_1:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_6_2:
+    #     trajectory: 0.5
+    #     goal: 0.1
+    #   joint_6_3:
+    #     trajectory: 0.5
+    #     goal: 0.1
