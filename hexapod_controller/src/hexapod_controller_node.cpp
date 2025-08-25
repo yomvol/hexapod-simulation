@@ -3,7 +3,7 @@
 FSM_INITIAL_STATE(StateMachine, Rest)
 using MyFsmList = tinyfsm::FsmList<StateMachine>;
 std::function<void()> HexapodBridge::sendStandPose = [](){};
-std::function<void()> HexapodBridge::startWalkCycle = [](){};
+std::function<void(bool)> HexapodBridge::startWalkCycle = [](bool is_reversed){};
 std::function<void()> HexapodBridge::cancelLegActions = [](){};
 
 HexapodControllerNode::HexapodControllerNode() : Node("hexapod_controller"),
@@ -50,16 +50,16 @@ HexapodControllerNode::HexapodControllerNode() : Node("hexapod_controller"),
       });
 
   HexapodBridge::sendStandPose = [this]() {this->sendStandPose();};
-  HexapodBridge::startWalkCycle = [this]() {
+  HexapodBridge::startWalkCycle = [this](bool is_reversed) {
     is_walking_ = true;
-    this->startWalkCycle();
+    this->startWalkCycle(is_reversed);
   };
   HexapodBridge::cancelLegActions = [this]() {this->cancelLegActions();};
   MyFsmList::start();
 
   gait_engine_ = std::make_shared<GaitEngine>(GAIT_CYCLE_DURATION.count());
 
-  is_ready_to_stand = false;
+  is_ready_to_stand_ = false;
   node_discovery_timer_ = this->create_wall_timer(
       std::chrono::seconds(2), 
       std::bind(&HexapodControllerNode::handleNodeDiscovery, this));
@@ -130,7 +130,7 @@ void HexapodControllerNode::sendRestPose() {
         } else {
           RCLCPP_INFO(this->get_logger(), "%s action completed successfully.", leg.name.c_str());
           leg.leg_action_in_progress = false;
-          this->is_ready_to_stand = true;
+          this->is_ready_to_stand_ = true;
         }
       };
 
@@ -216,12 +216,7 @@ void HexapodControllerNode::prepareLegTrajectories() {
       }
       auto& p = trajectory_points[i];
 
-      if (i == 0) { // forward difference, first point
-        for (int j = 0; j < 3; ++j) {
-          p.velocities[j] = (trajectory_points[i + 1].joint_angles[j] - p.joint_angles[j]) / dt;
-        }
-      }
-      else if (i == trajectory_points.size() - 1) { // last point should have zero velocities
+      if (i == 0 || i == trajectory_points.size() - 1) { // first and last points should have zero velocities
         p.velocities = {0.0, 0.0, 0.0};
       }
       else { // central difference for all other points gives increased accuracy
@@ -273,7 +268,7 @@ void HexapodControllerNode::prepareLegTrajectories() {
 }
 
 void HexapodControllerNode::sendStandPose() {
-  if (!is_ready_to_stand) {
+  if (!is_ready_to_stand_) {
     RCLCPP_WARN(this->get_logger(), "Hexapod is not ready to stand yet, ignoring stand pose command.");
     return;
   }
@@ -286,13 +281,13 @@ void HexapodControllerNode::sendStandPose() {
       }
 
       RCLCPP_INFO(this->get_logger(), "Sending stand pose for leg %s", leg.name.c_str());
-
       FollowJointTrajectory::Goal goal_msg;
       trajectory_msgs::msg::JointTrajectory traj;
       traj.header.stamp = this->now() + rclcpp::Duration::from_seconds(0.1); // start after 100ms delay
       traj.joint_names = leg.trajectory.joint_names;
       trajectory_msgs::msg::JointTrajectoryPoint pt;
       pt.positions.assign(traj.joint_names.size(), 0.0); // all zeros
+      pt.positions[2] = -0.5;
       pt.velocities.assign(traj.joint_names.size(), 0.0);
       pt.time_from_start = rclcpp::Duration::from_seconds(1.0); // 1 second to reach the pose
       traj.points.push_back(pt);
@@ -325,11 +320,13 @@ void HexapodControllerNode::sendStandPose() {
   }
 }
 
-void HexapodControllerNode::startWalkCycle() {
+void HexapodControllerNode::startWalkCycle(bool is_reversed) {
   if (!leg_frames_initialized_) {
     RCLCPP_DEBUG(this->get_logger(), "Waiting for leg frames to be initialized...");
     return;
   }
+
+  is_walking_reversed_ = is_reversed;
 
   for (auto & leg : legs_) {
     if (!leg.leg_action_in_progress) {
@@ -354,6 +351,13 @@ void HexapodControllerNode::startWalkCycle() {
     leg.marker_pub->publish(leg.marker); // publish marker for visualization
     leg.action_start_time = start_time;
     auto fresh_traj = leg.trajectory;
+    if (is_reversed) {
+      std::vector<trajectory_msgs::msg::JointTrajectoryPoint> reversed = std::vector<trajectory_msgs::msg::JointTrajectoryPoint>(fresh_traj.points.rbegin(), fresh_traj.points.rend());
+      for (int i = 0; i < reversed.size(); ++i) {
+        reversed[i].time_from_start = fresh_traj.points[i].time_from_start;
+      }
+      fresh_traj.points = reversed;
+    }
     fresh_traj.header.stamp = start_time;
 
     // we have to emplace the first point that coincides with the current joint state
@@ -394,7 +398,7 @@ void HexapodControllerNode::startWalkCycle() {
           for (auto & leg : legs_) {
             leg.leg_action_in_progress = false;
           }
-          if (is_walking_) startWalkCycle();
+          if (is_walking_) startWalkCycle(is_walking_reversed_);
         }
       }
     };
@@ -418,7 +422,7 @@ void HexapodControllerNode::startWalkCycle() {
           for (auto & leg : legs_) {
             leg.leg_action_in_progress = false;
           }
-          if (is_walking_) startWalkCycle();
+          if (is_walking_) startWalkCycle(is_walking_reversed_);
         }
       }
     };
@@ -431,6 +435,7 @@ void HexapodControllerNode::startWalkCycle() {
 
 void HexapodControllerNode::cancelLegActions() {
   is_walking_ = false;
+  is_walking_reversed_ = false;
   for (auto & leg : legs_) {
     leg.leg_action_in_progress = false;
   }

@@ -35,7 +35,7 @@ struct CommandVelocityEvent : tinyfsm::Event {
 /* node will set these callbacks so FSM code can call them in transition actions */
 struct HexapodBridge {
   static std::function<void()> sendStandPose;
-  static std::function<void()> startWalkCycle;
+  static std::function<void(bool)> startWalkCycle;
   static std::function<void()> cancelLegActions;
 };
 
@@ -86,8 +86,9 @@ public:
     void react(CommandVelocityEvent const & e) override {
         if (std::abs(e.linear_x) > VELOCITY_DEADZONE) {
             RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Walking state");
-            auto action = []() {
-                HexapodBridge::startWalkCycle();
+            bool is_reversed = e.linear_x < 0;
+            auto action = [is_reversed]() {
+                HexapodBridge::startWalkCycle(is_reversed);
             };
             transit<Walking>(action);
         }
@@ -113,6 +114,11 @@ public:
                 HexapodBridge::sendStandPose();
             };
             transit<Standing>(action);
+        }
+        else {
+            bool is_reversed = e.linear_x < 0;
+            HexapodBridge::cancelLegActions();
+            HexapodBridge::startWalkCycle(is_reversed);
         }
     }
 
@@ -154,8 +160,9 @@ private:
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
   bool leg_frames_initialized_ = false;
-  bool is_ready_to_stand = false;
+  bool is_ready_to_stand_ = false;
   bool is_walking_ = false;
+  bool is_walking_reversed_ = false;
   std::chrono::seconds GAIT_CYCLE_DURATION{2}; // time it takes for one full step with swing and stance
   int TRAJ_POINTS_PER_CYCLE = 100;
   double ERROR_TOLERANCE = 0.05; // error tolerance for leg actions
@@ -170,6 +177,6 @@ private:
   void sendRestPose();
   void prepareLegTrajectories();
   void sendStandPose();
-  void startWalkCycle();
+  void startWalkCycle(bool is_reversed);
   void cancelLegActions();
 };
