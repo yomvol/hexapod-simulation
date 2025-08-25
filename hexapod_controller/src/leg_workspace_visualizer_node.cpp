@@ -14,7 +14,7 @@ using namespace std::chrono_literals;
 class LegWorkspaceVisualizer : public rclcpp::Node {
 public:
   LegWorkspaceVisualizer() : Node("leg_workspace_visualizer"), 
-                            gait_engine_(std::make_shared<GaitEngine>(1000)),
+                            gait_engine_(std::make_shared<GaitEngine>(1)),
                             tf_buffer_(this->get_clock()),
                             tf_listener_(tf_buffer_) {
     marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("visualization_marker", 10);
@@ -30,7 +30,7 @@ private:
 
   void ComputeWorkspace() {
     visualization_msgs::msg::Marker marker;
-    marker.header.frame_id = "base_link";
+    marker.header.frame_id = "body";
     marker.header.stamp = this->get_clock()->now();
     marker.type = visualization_msgs::msg::Marker::SPHERE_LIST;
     marker.scale.x = 0.01;
@@ -41,13 +41,22 @@ private:
     marker.color.b = 0.0f;
     marker.color.a = 1.0f;
 
-    // I'll visualize only left front leg workspace for clarity
+    // we will visualize only left front leg workspace for clarity
     std::string coxa_frame = "coxa1_lf";
     
     try {
-      // get transform from coxa frame to base_link
+      // get transform from coxa frame to body frame
       geometry_msgs::msg::TransformStamped transform_stamped = 
-        tf_buffer_.lookupTransform("base_link", coxa_frame, tf2::TimePointZero);
+        tf_buffer_.lookupTransform("body", coxa_frame, tf2::TimePointZero);
+
+      // transform itself needs a correction, since main coxa axis is along x, but FK assumes it's along z
+      tf2::Transform body_to_coxa, correctionY, correctionZ, total_correction;
+      tf2::fromMsg(transform_stamped.transform, body_to_coxa);
+      correctionY.setRotation(tf2::Quaternion(tf2::Vector3(0,1,0), M_PI/2));
+      correctionZ.setRotation(tf2::Quaternion(tf2::Vector3(0,0,1), -M_PI/2));
+      total_correction = correctionY * correctionZ;
+      body_to_coxa = body_to_coxa * total_correction;
+      transform_stamped.transform = tf2::toMsg(body_to_coxa);
 
       // sampling the workspace incrementally
       for (double q1 = -M_PI/4; q1 <= M_PI/4; q1 += 0.3) {
@@ -59,11 +68,11 @@ private:
             geometry_msgs::msg::PointStamped leg_tip_point;
             leg_tip_point.header.frame_id = coxa_frame;
             leg_tip_point.header.stamp = this->get_clock()->now();
-            leg_tip_point.point.x = leg_tip.x; // adjust for z offset (in meters)
+            leg_tip_point.point.x = leg_tip.x;
             leg_tip_point.point.y = leg_tip.y;
             leg_tip_point.point.z = leg_tip.z;
-            
-            // transform to base_link frame
+
+            // transform to body frame
             geometry_msgs::msg::PointStamped point_base;
             tf2::doTransform(leg_tip_point, point_base, transform_stamped);
             
@@ -73,10 +82,8 @@ private:
       }
       
       marker_pub_->publish(marker);
-      RCLCPP_INFO(this->get_logger(), "Published workspace with %zu points", marker.points.size());
-      
     } catch (tf2::TransformException &ex) {
-      RCLCPP_WARN(this->get_logger(), "Could not transform from %s to base_link: %s", 
+      RCLCPP_WARN(this->get_logger(), "Could not transform from %s to body: %s", 
                  coxa_frame.c_str(), ex.what());
     }
   }

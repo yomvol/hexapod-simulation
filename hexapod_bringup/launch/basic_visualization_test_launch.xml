@@ -7,7 +7,7 @@
 
     <node pkg="joint_state_publisher_gui" exec="joint_state_publisher_gui"/>
 
-    <node pkg="rviz2" exec="rviz2" output="screen" args="-d $(find-pkg-share hexapod_bringup)/config/phantomx.rviz"/>
+    <node pkg="rviz2" exec="rviz2" output="screen" args="-d $(find-pkg-share hexapod_bringup)/config/basic_visualization.rviz"/>
 
     <node pkg="hexapod_controller" exec="leg_workspace_visualizer" output="screen"/>
 </launch>
