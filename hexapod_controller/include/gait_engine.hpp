@@ -21,7 +21,7 @@ struct LegTransformMatrix {
 };
 
 class GaitEngine {
-public:
+  public:
     GaitEngine(int cycle_duration);
 
     /// @brief Computes one point of the given leg's trajectory, if the computed point is unreachable, returns std::nullopt

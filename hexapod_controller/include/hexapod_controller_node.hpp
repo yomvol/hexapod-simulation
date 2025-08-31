@@ -41,13 +41,13 @@ struct HexapodBridge {
 
 class StateMachine : public tinyfsm::Fsm<StateMachine> {
 public:
-    void react(tinyfsm::Event const & e) {} // default empty reaction
+  void react(tinyfsm::Event const & e) {} // default empty reaction
 
-    virtual void react(WakeUpEvent const & e) {}
-    virtual void react(CommandVelocityEvent const & e) {}
+  virtual void react(WakeUpEvent const & e) {}
+  virtual void react(CommandVelocityEvent const & e) {}
 
-    virtual void entry() {}
-    virtual void exit() {}
+  virtual void entry() {}
+  virtual void exit() {}
 };
 #pragma endregion Finite State Machine
 
@@ -60,71 +60,71 @@ constexpr double VELOCITY_DEADZONE = 0.01;
 
 class Rest : public StateMachine {
 public:
-    using StateMachine::react;
+  using StateMachine::react;
 
-    void entry() override {
-        RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Rest state");
-    }
+  void entry() override {
+    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Rest state");
+  }
 
-    void react(WakeUpEvent const & e) override {
-        RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Standing state");
-        auto action = []() {
-            HexapodBridge::sendStandPose();
-        };
-        transit<Standing>(action);
-    }
+  void react(WakeUpEvent const & e) override {
+    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Standing state");
+    auto action = []() {
+        HexapodBridge::sendStandPose();
+    };
+    transit<Standing>(action);
+  }
 };
 
 class Standing : public StateMachine {
 public:
-    using StateMachine::react;
+  using StateMachine::react;
 
-    void entry() override {
-        RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Standing state");
-    }
+  void entry() override {
+    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Standing state");
+  }
 
-    void react(CommandVelocityEvent const & e) override {
-        if (std::abs(e.linear_x) > VELOCITY_DEADZONE) {
-            RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Walking state");
-            bool is_reversed = e.linear_x < 0;
-            auto action = [is_reversed]() {
-                HexapodBridge::startWalkCycle(is_reversed);
-            };
-            transit<Walking>(action);
-        }
-        else {
-            RCLCPP_DEBUG(rclcpp::get_logger("hexapod_controller"), "Ignoring insignificant velocity changes");
-        }
+  void react(CommandVelocityEvent const & e) override {
+    if (std::abs(e.linear_x) > VELOCITY_DEADZONE) {
+      RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Walking state");
+      bool is_reversed = e.linear_x < 0;
+      auto action = [is_reversed]() {
+        HexapodBridge::startWalkCycle(is_reversed); 
+      };
+      transit<Walking>(action);
     }
+    else {
+      RCLCPP_DEBUG(rclcpp::get_logger("hexapod_controller"), "Ignoring insignificant velocity changes");
+    }
+  }
 };
 
 class Walking : public StateMachine {
 public:
-    using StateMachine::react;
+  using StateMachine::react;
 
-    void entry() override {
-        RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Walking state");
-    }
+  void entry() override {
+    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Walking state");
+  }
 
-    void react(CommandVelocityEvent const & e) override {
-        if (std::abs(e.linear_x) < VELOCITY_DEADZONE && std::abs(e.angular_z) < VELOCITY_DEADZONE) {
-            RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Standing state");
-            auto action = []() {
-                HexapodBridge::cancelLegActions();
-                HexapodBridge::sendStandPose();
-            };
-            transit<Standing>(action);
-        }
-        else {
-            bool is_reversed = e.linear_x < 0;
-            HexapodBridge::cancelLegActions();
-            HexapodBridge::startWalkCycle(is_reversed);
-        }
+  void react(CommandVelocityEvent const & e) override {
+    if (std::abs(e.linear_x) < VELOCITY_DEADZONE && std::abs(e.angular_z) < VELOCITY_DEADZONE) {
+      RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Standing state");
+      auto action = []() {
+        HexapodBridge::cancelLegActions();
+        HexapodBridge::sendStandPose();
+      };
+      transit<Standing>(action);
     }
+    else {
+      bool is_reversed = e.linear_x < 0;
+      HexapodBridge::cancelLegActions();
+      HexapodBridge::startWalkCycle(is_reversed);
+    }
+  }
 
-    void exit() override {
-        RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Exiting Walking state");
-    }
+  void exit() override {
+    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Exiting Walking state");
+  }
 };
 #pragma endregion States
 

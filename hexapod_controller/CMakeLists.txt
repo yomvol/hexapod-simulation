@@ -49,4 +49,15 @@ ament_target_dependencies(leg_workspace_visualizer
   rclcpp visualization_msgs tf2_ros tf2_geometry_msgs)
 install(TARGETS leg_workspace_visualizer DESTINATION lib/${PROJECT_NAME})
 
+if(BUILD_TESTING)
+  find_package(ament_cmake_gtest REQUIRED)
+  ament_add_gtest(${PROJECT_NAME}_TEST test/gait_engine_test.cpp)
+  target_include_directories(${PROJECT_NAME}_TEST PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+    ${EIGEN3_INCLUDE_DIR}
+  )
+  # target_link_libraries(${PROJECT_NAME}_TEST )
+endif()
+
 ament_package()
