@@ -51,13 +51,13 @@ install(TARGETS leg_workspace_visualizer DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_cmake_gtest REQUIRED)
-  ament_add_gtest(${PROJECT_NAME}_TEST test/gait_engine_test.cpp)
+  ament_add_gtest(${PROJECT_NAME}_TEST test/gait_engine_test.cpp src/gait_engine.cpp include/gait_engine.hpp)
   target_include_directories(${PROJECT_NAME}_TEST PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
     ${EIGEN3_INCLUDE_DIR}
   )
-  # target_link_libraries(${PROJECT_NAME}_TEST )
+  # target_link_libraries(${PROJECT_NAME}_TEST)
 endif()
 
 ament_package()

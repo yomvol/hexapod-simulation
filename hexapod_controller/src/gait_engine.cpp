@@ -40,17 +40,14 @@ Vec3 GaitEngine::computeFootPosition(int leg_id, double time) {
 
   if (gait_phase < DUTY_CYCLE) {
     // stance phase
-    double s = gait_phase / DUTY_CYCLE;        // parameter normalized [0.0, 1.0]
-    relative_stride.x = STRIDE_LENGTH * (-s);  // from 0 to -STRIDE_LENGTH
+    double s = gait_phase / DUTY_CYCLE; // parameter normalized [0.0, 1.0]
+    relative_stride.x = STRIDE_LENGTH * (-s); // from 0 to -STRIDE_LENGTH
   } else {
     // swing phase
-    double s = (gait_phase - DUTY_CYCLE) /
-               (1.0 - DUTY_CYCLE);                // parameter normalized [0.0, 1.0]
-    relative_stride.x = STRIDE_LENGTH * (s - 1);  // from -STRIDE_LENGTH to 0
-    relative_stride.y = sign * LATERAL_SWAY *
-                        sin(M_PI * s);                // lateral sway is needed, otherwise
-                                                      // tibia doesn't have enough space
-    relative_stride.z = STEP_HEIGHT * sin(M_PI * s);  // nice smooth arc
+    double s = (gait_phase - DUTY_CYCLE) / (1.0 - DUTY_CYCLE); // parameter normalized [0.0, 1.0]
+    relative_stride.x = STRIDE_LENGTH * (s - 1); // from -STRIDE_LENGTH to 0
+    relative_stride.y = sign * LATERAL_SWAY * sin(M_PI * s); // lateral sway is needed, otherwise tibia doesn't have enough space
+    relative_stride.z = STEP_HEIGHT * sin(M_PI * s); // nice smooth arc
   }
   if (leg_id == 0 || leg_id == 5) {
     relative_stride.y += sign * 0.02;
@@ -60,9 +57,7 @@ Vec3 GaitEngine::computeFootPosition(int leg_id, double time) {
   }
 
   Eigen::Vector3d foot_pos_local_to_coxa =
-      getLegEndpoint();  // relative to coxa frame, Z up (joint axis), x along
-                         // the leg, y to the side (global coords 0.23, 0.17,
-                         // -0.18)
+    getLegEndpoint();  // relative to coxa frame, Z up (joint axis), x along the leg, y to the side (global coords 0.23, 0.17, -0.18)
   Eigen::Vector3d offset = Eigen::Vector3d(relative_stride.x, relative_stride.y, relative_stride.z);
   double angle = 0.0;
   switch (leg_id) {
