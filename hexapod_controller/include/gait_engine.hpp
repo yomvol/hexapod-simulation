@@ -46,6 +46,11 @@ class GaitEngine {
   /// @return The position of the end effector
   Vec3 computeLegFK(const std::array<double, 3>& joint_angles);
 
+  /// @brief Computes the inverse kinematics for a leg
+  /// @param leg_tip_position The position of the leg tip in the base frame
+  /// @return The joint angles for the leg
+  std::optional<std::array<double, 3>> computeLegIK(Vec3 leg_tip_position);
+
   /// @brief Initialize with leg frame transforms relative to body
   /// @param leg_id The ID of the leg (0-5)
   /// @param body_to_coxa Transform from body frame to coxa frame
@@ -98,11 +103,6 @@ class GaitEngine {
   /// @param alpha Link twist
   /// @return Denavit-Hartenberg matrix
   Eigen::Matrix4d dhToTransform(double theta, double d, double a, double alpha);
-
-  /// @brief Computes the inverse kinematics for a leg
-  /// @param leg_tip_position The position of the leg tip in the base frame
-  /// @return The joint angles for the leg
-  std::optional<std::array<double, 3>> computeLegIK(Vec3 leg_tip_position);
 
   double getLegPhaseOffset(int leg_id) const;
 

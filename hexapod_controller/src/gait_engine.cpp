@@ -105,15 +105,12 @@ std::optional<std::vector<double>> GaitEngine::getLegTrajectoryPoint(int leg_id,
 
   T_local = Eigen::Isometry3d(Eigen::Translation3d(foot_pos_local_to_coxa.x,
                                                    foot_pos_local_to_coxa.y,
-                                                   foot_pos_local_to_coxa.z))
-                .matrix();
+                                                   foot_pos_local_to_coxa.z)).matrix();
 
   R_y = Eigen::Matrix4d::Identity();
-  R_y.block<3, 3>(0, 0) =
-      Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()).toRotationMatrix();
+  R_y.block<3, 3>(0, 0) = Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY()).toRotationMatrix();
   R_z = Eigen::Matrix4d::Identity();
-  R_z.block<3, 3>(0, 0) =
-      Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ()).toRotationMatrix();
+  R_z.block<3, 3>(0, 0) = Eigen::AngleAxisd(-M_PI / 2, Eigen::Vector3d::UnitZ()).toRotationMatrix();
   R_correction = R_y * R_z;
 
   // apply the coordinate transformation
@@ -177,8 +174,7 @@ std::optional<std::array<double, 3>> GaitEngine::computeLegIK(Vec3 leg_tip_posit
       (FEMUR_LENGTH * FEMUR_LENGTH - TIBIA_LENGTH * TIBIA_LENGTH + l * l) /
       (2 * FEMUR_LENGTH * l);
   double beta = acos(cos_beta);
-  // double theta2 = M_PI - (alpha + beta); // don't touch magic numbers lol
-  // -110.4948
+  // double theta2 = M_PI - (alpha + beta); // don't touch magic numbers lol -110.4948
   double theta2 = alpha + beta - 110.4948 * M_PI / 180.0;
 
   double cos_theta3 =

@@ -22,6 +22,23 @@ namespace tests {
     EXPECT_NEAR(result.z, -0.18, 1e-4);
   }
 
+  TEST_F(GaitEngineTest, ForwardKinematicsToInverseKinematics) {
+    std::array<double, 3> input = {0.0, 0.0, 0.0};
+    Vec3 fk_result = gait_engine_->computeLegFK(input);
+    auto ik_result = gait_engine_->computeLegIK(fk_result);
+
+    ASSERT_TRUE(ik_result.has_value());
+    EXPECT_NEAR(ik_result->at(0), input[0], 1e-3);
+    EXPECT_NEAR(ik_result->at(1), input[1], 1e-3);
+    EXPECT_NEAR(ik_result->at(2), input[2], 1e-3);
+  }
+
+  TEST_F(GaitEngineTest, InverseKinematicsUnreachablePoint) {
+    Vec3 unreachable_point = {10.0, 10.0, 10.0};  // clearly unreachable
+    auto ik_result = gait_engine_->computeLegIK(unreachable_point);
+    ASSERT_FALSE(ik_result.has_value());
+  }
+
   int main(int argc, char** argv) {
     testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
