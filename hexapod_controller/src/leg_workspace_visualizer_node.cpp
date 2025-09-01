@@ -1,27 +1,29 @@
-#include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+
 #include <chrono>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#include <geometry_msgs/msg/transform_stamped.hpp>
 
 #include "gait_engine.hpp"
 
 using namespace std::chrono_literals;
 
 class LegWorkspaceVisualizer : public rclcpp::Node {
-public:
-  LegWorkspaceVisualizer() : Node("leg_workspace_visualizer"), 
-                            gait_engine_(std::make_shared<GaitEngine>(1)),
-                            tf_buffer_(this->get_clock()),
-                            tf_listener_(tf_buffer_) {
+ public:
+  LegWorkspaceVisualizer()
+      : Node("leg_workspace_visualizer"),
+        gait_engine_(std::make_shared<GaitEngine>(1)),
+        tf_buffer_(this->get_clock()),
+        tf_listener_(tf_buffer_) {
     marker_pub_ = this->create_publisher<visualization_msgs::msg::Marker>("visualization_marker", 10);
     timer_ = this->create_wall_timer(1s, std::bind(&LegWorkspaceVisualizer::ComputeWorkspace, this));
   }
 
-private:
+ private:
   rclcpp::Publisher<visualization_msgs::msg::Marker>::SharedPtr marker_pub_;
   rclcpp::TimerBase::SharedPtr timer_;
   std::shared_ptr<GaitEngine> gait_engine_;
@@ -43,27 +45,27 @@ private:
 
     // we will visualize only left front leg workspace for clarity
     std::string coxa_frame = "coxa1_lf";
-    
+
     try {
       // get transform from coxa frame to body frame
-      geometry_msgs::msg::TransformStamped transform_stamped = 
-        tf_buffer_.lookupTransform("body", coxa_frame, tf2::TimePointZero);
+      geometry_msgs::msg::TransformStamped transform_stamped = tf_buffer_.lookupTransform("body", coxa_frame, tf2::TimePointZero);
 
-      // transform itself needs a correction, since main coxa axis is along x, but FK assumes it's along z
+      // transform itself needs a correction, since main coxa axis is along x,
+      // but FK assumes it's along z
       tf2::Transform body_to_coxa, correctionY, correctionZ, total_correction;
       tf2::fromMsg(transform_stamped.transform, body_to_coxa);
-      correctionY.setRotation(tf2::Quaternion(tf2::Vector3(0,1,0), M_PI/2));
-      correctionZ.setRotation(tf2::Quaternion(tf2::Vector3(0,0,1), -M_PI/2));
+      correctionY.setRotation(tf2::Quaternion(tf2::Vector3(0, 1, 0), M_PI / 2));
+      correctionZ.setRotation(tf2::Quaternion(tf2::Vector3(0, 0, 1), -M_PI / 2));
       total_correction = correctionY * correctionZ;
       body_to_coxa = body_to_coxa * total_correction;
       transform_stamped.transform = tf2::toMsg(body_to_coxa);
 
       // sampling the workspace incrementally
-      for (double q1 = -M_PI/4; q1 <= M_PI/4; q1 += 0.3) {
-        for (double q2 = -M_PI/2; q2 <= M_PI/2; q2 += 0.3) {
-          for (double q3 = -M_PI/2; q3 <= M_PI/2; q3 += 0.3) {
+      for (double q1 = -M_PI / 4; q1 <= M_PI / 4; q1 += 0.3) {
+        for (double q2 = -M_PI / 2; q2 <= M_PI / 2; q2 += 0.3) {
+          for (double q3 = -M_PI / 2; q3 <= M_PI / 2; q3 += 0.3) {
             Vec3 leg_tip = gait_engine_->computeLegFK({q1, q2, q3});
-            
+
             // convert to geometry_msgs::msg::Point for transformation
             geometry_msgs::msg::PointStamped leg_tip_point;
             leg_tip_point.header.frame_id = coxa_frame;
@@ -75,21 +77,20 @@ private:
             // transform to body frame
             geometry_msgs::msg::PointStamped point_base;
             tf2::doTransform(leg_tip_point, point_base, transform_stamped);
-            
+
             marker.points.push_back(point_base.point);
           }
         }
       }
-      
+
       marker_pub_->publish(marker);
-    } catch (tf2::TransformException &ex) {
-      RCLCPP_WARN(this->get_logger(), "Could not transform from %s to body: %s", 
-                 coxa_frame.c_str(), ex.what());
+    } catch (tf2::TransformException& ex) {
+      RCLCPP_WARN(this->get_logger(), "Could not transform from %s to body: %s", coxa_frame.c_str(), ex.what());
     }
   }
 };
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   rclcpp::init(argc, argv);
   rclcpp::spin(std::make_shared<LegWorkspaceVisualizer>());
   rclcpp::shutdown();

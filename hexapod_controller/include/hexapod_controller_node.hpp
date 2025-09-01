@@ -1,21 +1,22 @@
 #pragma once
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+
+#include <array>
+#include <chrono>
+#include <control_msgs/action/follow_joint_trajectory.hpp>
+#include <functional>
+#include <geometry_msgs/msg/twist.hpp>
+#include <memory>
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_action/rclcpp_action.hpp>
-#include <control_msgs/action/follow_joint_trajectory.hpp>
+#include <sensor_msgs/msg/joint_state.hpp>
+#include <std_srvs/srv/trigger.hpp>
+#include <tf2_eigen/tf2_eigen.hpp>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include <trajectory_msgs/msg/joint_trajectory.hpp>
 #include <trajectory_msgs/msg/joint_trajectory_point.hpp>
-#include <tf2_ros/transform_listener.h>
-#include <tf2_ros/buffer.h>
-#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
-#include <tf2_eigen/tf2_eigen.hpp>
-#include <chrono>
 #include <visualization_msgs/msg/marker.hpp>
-#include <sensor_msgs/msg/joint_state.hpp>
-#include <geometry_msgs/msg/twist.hpp>
-#include <std_srvs/srv/trigger.hpp>
-#include <array>
-#include <memory>
-#include <functional>
 
 #include "gait_engine.hpp"
 #include "tinyfsm.hpp"
@@ -28,11 +29,13 @@ struct WakeUpEvent : tinyfsm::Event {};
 struct CommandVelocityEvent : tinyfsm::Event {
   double linear_x;
   double angular_z;
-  CommandVelocityEvent(double lx = 0.0, double az = 0.0) : linear_x(lx), angular_z(az) {}
+  CommandVelocityEvent(double lx = 0.0, double az = 0.0)
+      : linear_x(lx), angular_z(az) {}
 };
 
 /* ----------- bridge (FSM -> ROS side effects) ----------- */
-/* node will set these callbacks so FSM code can call them in transition actions */
+/* node will set these callbacks so FSM code can call them in transition actions
+ */
 struct HexapodBridge {
   static std::function<void()> sendStandPose;
   static std::function<void(bool)> startWalkCycle;
@@ -40,12 +43,10 @@ struct HexapodBridge {
 };
 
 class StateMachine : public tinyfsm::Fsm<StateMachine> {
-public:
-  void react(tinyfsm::Event const & e) {} // default empty reaction
-
-  virtual void react(WakeUpEvent const & e) {}
-  virtual void react(CommandVelocityEvent const & e) {}
-
+ public:
+  void react(tinyfsm::Event const& e) {}  // default empty reaction
+  virtual void react(WakeUpEvent const& e) {}
+  virtual void react(CommandVelocityEvent const& e) {}
   virtual void entry() {}
   virtual void exit() {}
 };
@@ -59,63 +60,60 @@ class Walking;
 constexpr double VELOCITY_DEADZONE = 0.01;
 
 class Rest : public StateMachine {
-public:
+ public:
   using StateMachine::react;
 
   void entry() override {
     RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Rest state");
   }
 
-  void react(WakeUpEvent const & e) override {
+  void react(WakeUpEvent const& e) override {
     RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Standing state");
-    auto action = []() {
-        HexapodBridge::sendStandPose();
-    };
+    auto action = []() { HexapodBridge::sendStandPose(); };
     transit<Standing>(action);
   }
 };
 
 class Standing : public StateMachine {
-public:
+ public:
   using StateMachine::react;
 
   void entry() override {
     RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Standing state");
   }
 
-  void react(CommandVelocityEvent const & e) override {
+  void react(CommandVelocityEvent const& e) override {
     if (std::abs(e.linear_x) > VELOCITY_DEADZONE) {
       RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Walking state");
       bool is_reversed = e.linear_x < 0;
       auto action = [is_reversed]() {
-        HexapodBridge::startWalkCycle(is_reversed); 
+        HexapodBridge::startWalkCycle(is_reversed);
       };
       transit<Walking>(action);
-    }
-    else {
+    } else {
       RCLCPP_DEBUG(rclcpp::get_logger("hexapod_controller"), "Ignoring insignificant velocity changes");
     }
   }
 };
 
 class Walking : public StateMachine {
-public:
+ public:
   using StateMachine::react;
 
   void entry() override {
     RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Walking state");
   }
 
-  void react(CommandVelocityEvent const & e) override {
-    if (std::abs(e.linear_x) < VELOCITY_DEADZONE && std::abs(e.angular_z) < VELOCITY_DEADZONE) {
+  void react(CommandVelocityEvent const& e) override {
+    if (std::abs(e.linear_x) < VELOCITY_DEADZONE &&
+        std::abs(e.angular_z) < VELOCITY_DEADZONE) {
       RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Standing state");
       auto action = []() {
         HexapodBridge::cancelLegActions();
         HexapodBridge::sendStandPose();
       };
       transit<Standing>(action);
-    }
-    else {
+    } else {
       bool is_reversed = e.linear_x < 0;
       HexapodBridge::cancelLegActions();
       HexapodBridge::startWalkCycle(is_reversed);
@@ -129,16 +127,16 @@ public:
 #pragma endregion States
 
 class HexapodControllerNode : public rclcpp::Node {
-public:
+ public:
   using FollowJointTrajectory = control_msgs::action::FollowJointTrajectory;
   using GoalHandle = rclcpp_action::ClientGoalHandle<FollowJointTrajectory>;
 
   struct TrajectoryPoint {
-      std::vector<double> joint_angles; // we have 3 joints per leg, but can't use std::array here due to the action interface requirements
-      std::vector<double> velocities; // angular velocities for each joint rad/s
-      rclcpp::Duration relative_time_from_start; // time from the start of the trajectory
-      Vec3 leg_tip_position_global;
-      TrajectoryPoint();
+    std::vector<double> joint_angles; // we have 3 joints per leg, but can't use std::array here due to the action interface requirements
+    std::vector<double> velocities; // angular velocities for each joint rad/s
+    rclcpp::Duration relative_time_from_start; // time from the start of the trajectory
+    Vec3 leg_tip_position_global;
+    TrajectoryPoint();
   };
 
   struct Leg {
@@ -153,7 +151,7 @@ public:
 
   HexapodControllerNode();
 
-private:
+ private:
   rclcpp::TimerBase::SharedPtr init_timer_;
   rclcpp::TimerBase::SharedPtr node_discovery_timer_;
   std::shared_ptr<GaitEngine> gait_engine_;
@@ -172,7 +170,7 @@ private:
   int num_of_legs_in_action_ = 0;
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
   sensor_msgs::msg::JointState::SharedPtr last_joint_state_;
-  
+
   void handleNodeDiscovery();
   void sendRestPose();
   void prepareLegTrajectories();
