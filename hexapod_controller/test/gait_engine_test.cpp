@@ -1,5 +1,6 @@
 #include "gait_engine.hpp"
 #include <gtest/gtest.h>
+#include <iostream>
 
 namespace tests {
 
@@ -24,6 +25,10 @@ namespace tests {
 
   TEST_F(GaitEngineTest, ForwardKinematicsToInverseKinematics) {
     std::array<double, 3> input = {0.0, 0.0, 0.0};
+
+    // it's pretty pointless to test other angle configurations, because IK solver won't come up with the same angles
+    // for example, given the input {0.0, 0.0, M_PI / 6}, IK solver wants to bend femur, not tibia
+
     Vec3 fk_result = gait_engine_->computeLegFK(input);
     auto ik_result = gait_engine_->computeLegIK(fk_result);
 

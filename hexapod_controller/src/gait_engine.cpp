@@ -16,13 +16,11 @@ Eigen::Matrix4d GaitEngine::dhToTransform(double theta, double d, double a, doub
   Eigen::Matrix4d T;
 
   // standard DH for Z-axis rotation
-  Eigen::Matrix4d T_standard;
-  T_standard << cos(theta), -sin(theta) * cos(alpha), sin(theta) * sin(alpha),
-      a * cos(theta), sin(theta), cos(theta) * cos(alpha),
-      -cos(theta) * sin(alpha), a * sin(theta), 0, sin(alpha), cos(alpha), d, 0,
-      0, 0, 1;
-
-  return T_standard;
+  T << cos(theta), -sin(theta) * cos(alpha), sin(theta) * sin(alpha), a * cos(theta),
+       sin(theta),  cos(theta) * cos(alpha), -cos(theta) * sin(alpha), a * sin(theta),
+       0,           sin(alpha),             cos(alpha),             d,
+       0,           0,                      0,                      1;
+  return T;
 }
 
 double GaitEngine::getLegPhaseOffset(int leg_id) const {
