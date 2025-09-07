@@ -1,4 +1,5 @@
-FROM ubuntu:24.04 AS base
+# FROM ubuntu:24.04 AS base
+FROM nvidia/cuda:12.6.2-cudnn-runtime-ubuntu24.04 AS base
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install language
@@ -35,6 +36,29 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 RUN add-apt-repository universe
 ENV GZ_SIM_SYSTEM_PLUGIN_PATH=/opt/ros/jazzy/lib/
+
+# Expose the nvidia driver to allow opengl
+# Dependencies for glvnd and X11.
+RUN apt-get update \
+    && apt-get install -y -qq --no-install-recommends \
+    libglvnd0 \
+    libgl1 \
+    libglx0 \
+    libegl1 \
+    libxext6 \
+    libx11-6 \
+    libgl1-mesa-dri \
+    libglu1-mesa \
+    && rm -rf /var/lib/apt/lists/*
+
+# Env vars for the nvidia-container-runtime.
+ENV NVIDIA_VISIBLE_DEVICES=all
+ENV NVIDIA_DRIVER_CAPABILITIES=all
+ENV QT_X11_NO_MITSHM=1
+ENV __NV_PRIME_RENDER_OFFLOAD=1
+ENV __GLX_VENDOR_LIBRARY_NAME=nvidia
+ENV MESA_D3D12_DEFAULT_ADAPTER_NAME=NVIDIA
+ENV LIBGL_ALWAYS_SOFTWARE=false
 
 # Configure XDG_RUNTIME_DIR
 ENV XDG_RUNTIME_DIR=/tmp/runtime-root
