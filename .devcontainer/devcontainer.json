@@ -1,26 +1,22 @@
-// For format details, see https://aka.ms/devcontainer.json. For config options, see the
-// README at: https://github.com/devcontainers/templates/tree/main/src/docker-existing-dockerfile
 {
 	"name": "ros-jazzy-dev",
 	"build": {
 		"context": "..",
-		"dockerfile": "../ros-jazzy.Dockerfile"
+		"dockerfile": "../ros-jazzy-cuda.Dockerfile",
+		"target": "dev"
+	},
+	"runArgs": [
+		"--network=host",
+		"--ipc=host",
+		"--gpus",
+		"all"
+	],
+	"workspaceMount": "source=${localWorkspaceFolder},target=/ros_ws/src/hexapod_simulation,type=bind,consistency=cached",
+	"workspaceFolder": "/ros_ws",
+	"mounts": [
+		"source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind"
+	],
+	"containerEnv": {
+		"DISPLAY": "${localEnv:DISPLAY}"
 	}
-
-
-
-	// Features to add to the dev container. More info: https://containers.dev/features.
-	// "features": {},
-
-	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
-
-	// Uncomment the next line to run commands after the container is created.
-	// "postCreateCommand": "cat /etc/os-release",
-
-	// Configure tool-specific properties.
-	// "customizations": {},
-
-	// Uncomment to connect as an existing user other than the container default. More info: https://aka.ms/dev-containers-non-root.
-	// "remoteUser": "devcontainer"
 }
