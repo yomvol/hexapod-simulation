@@ -85,6 +85,7 @@ ros2 launch hexapod_bringup basic_visualization_test_launch.xml
 ```
 
 ## Testing
+The project was tested on Ubuntu 24.04 Noble/ROS 2 Jazzy/Gazebo Harmonic.
 C++ core logic should be covered in unit tests. Google Test framework is used since it integrates with colcon nicely.<br>
 Build the tests on ROS workspace level:
 ```
@@ -105,3 +106,4 @@ Though this paper's quaternion-based approach to dynamics is yet to be grasped, 
 Mohamed A. Kamel PhD., Abdelrahman Zaghloul M.Eng., Sameh I. Beaber M.Eng.<br>
 
 This paper actually describes geometrical approach to inverse kinematics in detail (unlike the previous one)
+
