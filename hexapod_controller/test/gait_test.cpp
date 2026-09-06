@@ -48,6 +48,20 @@ TEST_F(GaitTest, FullCycleBakeSucceedsForAllLegs) {
   }
 }
 
+TEST_F(GaitTest, FullCycleBakeHasNoSkippedPoints) {
+  // the node's velocity pass divides by the constant grid dt, so a single
+  // IK-skipped point would silently corrupt the velocities around the gap;
+  // the bake must produce every point of the cycle for every leg
+  for (int leg_id = 0; leg_id < kLegCount; ++leg_id) {
+    for (int i = 0; i < kBakePoints; ++i) {
+      double t = kCycleDuration * i / kBakePoints;
+      auto joints = gait_engine_->getLegTrajectoryPoint(leg_id, t);
+      ASSERT_TRUE(joints.has_value())
+          << "IK skipped leg " << leg_id << " point " << i << " at t=" << t;
+    }
+  }
+}
+
 TEST_F(GaitTest, TripodGroupsMoveComplementary) {
   // the tripod phasing guard: legs from opposite tripods must alternate, so
   // the distance between one foot of each group varies over the cycle by

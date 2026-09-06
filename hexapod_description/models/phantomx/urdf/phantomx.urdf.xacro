@@ -188,8 +188,11 @@
       </geometry>
     </collision>
     <inertial>
-      <inertia ixx="3.10818" ixy="-0.25460" ixz="2.03182" iyy="6.37878" iyz="0.16418" izz="5.33164"/>
-      <origin rpy="0.00000 0.00000 0.00000" xyz="0.00000 0.00000 0.00000"/>
+      <!-- computed from body_coll.stl (signed-tetrahedron method, mass-scaled to
+           0.9756 kg) with tools/compute_body_inertia.py; the previously shipped
+           tensor was ~1000x too large (unit slip in the original export) -->
+      <inertia ixx="0.00312855" ixy="0.00000051" ixz="0.00000002" iyy="0.00532771" iyz="-0.00000002" izz="0.00813158"/>
+      <origin rpy="0.00000 0.00000 0.00000" xyz="-0.000211 0.000143 -0.000468"/>
       <mass value="0.97560"/>
     </inertial>
     <visual name="body_visual">

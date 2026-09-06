@@ -7,11 +7,11 @@
     <physics type="ignored">
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1.0</real_time_factor>
-      <!-- 500 (RTF ~0.5, sim at half wall speed) is intentional: at 1000 the
-           walk-cycle action goals stop completing on time and get watchdog-
-           cancelled every cycle. Revisit only together with the goal-timing
-           investigation. -->
-      <real_time_update_rate>500.0</real_time_update_rate>
+      <!-- 1000 = one physics step per ms in ~real time; must match the
+           controller_manager update_rate (1000 Hz). The walk-cycle watchdog in
+           hexapod_controller_node.cpp is sized to the gait cycle, so goal
+           timing stays consistent at this rate. -->
+      <real_time_update_rate>1000.0</real_time_update_rate>
     </physics>
     
     <plugin

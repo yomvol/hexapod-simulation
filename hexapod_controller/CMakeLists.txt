@@ -8,7 +8,6 @@ find_package(rclcpp_action REQUIRED)
 find_package(control_msgs REQUIRED)
 find_package(trajectory_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
-find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(visualization_msgs REQUIRED)
@@ -40,7 +39,7 @@ target_include_directories(leg_workspace_visualizer PUBLIC
   ${EIGEN3_INCLUDE_DIR}
 )
 ament_target_dependencies(hexapod_controller
-  rclcpp rclcpp_action control_msgs sensor_msgs trajectory_msgs std_msgs std_srvs visualization_msgs tf2_ros tf2_geometry_msgs tf2_eigen geometry_msgs)
+  rclcpp rclcpp_action control_msgs sensor_msgs trajectory_msgs std_srvs visualization_msgs tf2_ros tf2_geometry_msgs tf2_eigen geometry_msgs)
 install(TARGETS hexapod_controller DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY include/

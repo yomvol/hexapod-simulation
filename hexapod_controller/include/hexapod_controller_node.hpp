@@ -53,6 +53,8 @@ class HexapodControllerNode : public rclcpp::Node {
  private:
   rclcpp::TimerBase::SharedPtr init_timer_;
   rclcpp::TimerBase::SharedPtr node_discovery_timer_;
+  rclcpp::TimerBase::SharedPtr cmd_vel_watchdog_timer_;
+  rclcpp::Time last_cmd_vel_time_;  // stamp of the last received /cmd_vel
   std::shared_ptr<GaitEngine> gait_engine_;
   tf2_ros::Buffer tf_buffer_;
   tf2_ros::TransformListener tf_listener_;
@@ -61,6 +63,14 @@ class HexapodControllerNode : public rclcpp::Node {
   bool is_walking_ = false;
   bool is_walking_reversed_ = false;
   std::chrono::seconds GAIT_CYCLE_DURATION{2}; // time it takes for one full step with swing and stance
+  // lead-in segment at the start of every walk cycle: carries the robot from
+  // its current pose (stand pose, mid-gait pose after a reversal) to the gait's
+  // phase-0 pose instead of demanding it within one 20 ms trajectory segment
+  std::chrono::milliseconds WALK_BLEND_DURATION{500};
+  // dead-man switch: halt the walk when no cmd_vel arrives for this long.
+  // teleop streams commands while a key is held; a single tap walks for at
+  // most this long
+  std::chrono::milliseconds CMD_VEL_TIMEOUT{1000};
   int TRAJ_POINTS_PER_CYCLE = 100;
   double ERROR_TOLERANCE = 0.05; // error tolerance for leg actions
   std::array<Leg, 6> legs_;
@@ -79,4 +89,5 @@ class HexapodControllerNode : public rclcpp::Node {
   void startWalkCycle(bool is_reversed);
   void onLegFinished(int leg_id);
   void cancelLegActions();
+  void checkCmdVelTimeout();
 };

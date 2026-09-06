@@ -1,8 +1,15 @@
 #include "gait_engine.hpp"
 #include <algorithm>
 #include <cmath>
+#include <stdexcept>
 
 GaitEngine::GaitEngine(int cycle_duration) {
+  // a zero or negative cycle duration would reach time / cycle_duration_ =
+  // inf and poison every gait phase with NaN
+  if (cycle_duration <= 0) {
+    throw std::invalid_argument("GaitEngine: cycle_duration must be positive, got " +
+                                std::to_string(cycle_duration));
+  }
   for (int i = 0; i < 6; ++i) {
     leg_transforms_[i].body_to_coxa = Eigen::Isometry3d::Identity();
   }
@@ -25,6 +32,11 @@ Eigen::Matrix4d GaitEngine::dhToTransform(double theta, double d, double a, doub
 }
 
 double GaitEngine::getLegPhaseOffset(int leg_id) const {
+  // computeFootPosition calls this before its own leg_id switch, so this check
+  // is what actually guards against out-of-range leg ids
+  if (leg_id < 0 || leg_id >= 6) {
+    throw std::invalid_argument("Invalid leg ID: " + std::to_string(leg_id));
+  }
   // tripod gait — 0.0 for first tripod, 0.5 for second
   static const double offsets[6] = {0.0, 0.5, 0.0, 0.5, 0.0, 0.5};
   return offsets[leg_id];
@@ -34,7 +46,10 @@ Vec3 GaitEngine::computeFootPosition(int leg_id, double time) {
   Vec3 relative_stride;
   relative_stride.y = 0.0;
   const double phase_offset = getLegPhaseOffset(leg_id);
-  double gait_phase = fmod(time / cycle_duration_ + phase_offset, 1.0);
+  // fmod inherits the sign of its argument, so a negative time would produce a
+  // negative phase and flip the stance/swing split — wrap into [0, 1)
+  double gait_phase =
+      std::fmod(std::fmod(time / cycle_duration_ + phase_offset, 1.0) + 1.0, 1.0);
   int sign = (leg_id < 3) ? 1 : -1;
 
   if (gait_phase < DUTY_CYCLE) {

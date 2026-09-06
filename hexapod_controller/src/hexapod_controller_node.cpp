@@ -39,6 +39,7 @@ HexapodControllerNode::HexapodControllerNode()
 
   cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
       "/cmd_vel", 10, [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
+        last_cmd_vel_time_ = this->now();
         HexapodFsm::dispatch(
             CommandVelocityEvent(msg->linear.x, msg->angular.z));
       });
@@ -60,6 +61,7 @@ HexapodControllerNode::HexapodControllerNode()
   gait_engine_ = std::make_shared<GaitEngine>(GAIT_CYCLE_DURATION.count());
 
   is_ready_to_stand_ = false;
+  last_cmd_vel_time_ = this->now();  // match the active clock type before any timer can fire
   node_discovery_timer_ = this->create_wall_timer(
       std::chrono::seconds(2),
       std::bind(&HexapodControllerNode::handleNodeDiscovery, this));
@@ -68,6 +70,25 @@ HexapodControllerNode::HexapodControllerNode()
   init_timer_ = this->create_wall_timer(
       std::chrono::seconds(5),
       std::bind(&HexapodControllerNode::prepareLegTrajectories, this));
+
+  cmd_vel_watchdog_timer_ = this->create_wall_timer(
+      std::chrono::milliseconds(100),
+      std::bind(&HexapodControllerNode::checkCmdVelTimeout, this));
+}
+
+// Dead-man switch: when commands stop arriving mid-walk (teleop crashed,
+// publisher gone), halt through the normal FSM path instead of chaining gait
+// cycles forever. Uses sim time consistently with the cmd_vel stamps.
+void HexapodControllerNode::checkCmdVelTimeout() {
+  if (!is_walking_) {
+    return;
+  }
+  const double stale_for = (this->now() - last_cmd_vel_time_).seconds();
+  if (stale_for <= CMD_VEL_TIMEOUT.count() / 1000.0) {
+    return;
+  }
+  RCLCPP_WARN(this->get_logger(), "No cmd_vel for %.1f s — halting the walk", stale_for);
+  HexapodFsm::dispatch(CommandVelocityEvent(0.0, 0.0));
 }
 
 HexapodControllerNode::TrajectoryPoint::TrajectoryPoint()
@@ -157,8 +178,18 @@ void HexapodControllerNode::sendRestPose() {
 }
 
 void HexapodControllerNode::prepareLegTrajectories() {
+  // Bake everything into locals and commit only if every leg produced a full,
+  // uniformly spaced cycle: the velocity pass divides by the constant grid dt,
+  // so a single skipped (IK-unreachable) point would silently corrupt the
+  // velocities around the gap. On any failure the previous trajectories are
+  // kept and the init timer retries.
+  std::array<trajectory_msgs::msg::JointTrajectory, 6> baked_trajs;
+  std::array<std::vector<geometry_msgs::msg::Point>, 6> baked_markers;
+  bool all_baked = true;
+
   for (int leg_id = 0; leg_id < 6; ++leg_id) {
     auto leg_name = legs_[leg_id].name;
+    bool leg_failed = false;
     std::string suffix;
     switch (leg_id + 1) {
       case 1:
@@ -205,7 +236,6 @@ void HexapodControllerNode::prepareLegTrajectories() {
     // obviously, header stamp should be set later like this traj.header.stamp = ...
     std::string joint_name_prefix = "joint_" + std::to_string(leg_id + 1);
     traj.joint_names = {joint_name_prefix + "_1", joint_name_prefix + "_2", joint_name_prefix + "_3"};
-    legs_[leg_id].marker.points.clear();  // a retry re-bakes everything; don't accumulate old points
     trajectory_points.reserve(TRAJ_POINTS_PER_CYCLE);
 
     // first pass: generate all joint angles for the trajectory points
@@ -216,8 +246,11 @@ void HexapodControllerNode::prepareLegTrajectories() {
       Vec3 leg_tip_pos;
       auto joint_angles = gait_engine_->getLegTrajectoryPoint(leg_id, relative_time.seconds(), leg_tip_pos);
 
-      if (!joint_angles) { RCLCPP_WARN( this->get_logger(), (leg_name + " IK solution not found for trajectory point %d.").c_str(), i);
-        continue;
+      if (!joint_angles) {
+        RCLCPP_ERROR(this->get_logger(), "%s: IK solution not found for trajectory point %d — bake aborted.",
+                    leg_name.c_str(), i);
+        leg_failed = true;
+        break;
       }
 
       TrajectoryPoint point;
@@ -238,14 +271,35 @@ void HexapodControllerNode::prepareLegTrajectories() {
       //             joint_angles.value()[2] * 180.0 / M_PI);
     }
 
+    if (trajectory_points.size() != static_cast<size_t>(TRAJ_POINTS_PER_CYCLE)) {
+      RCLCPP_ERROR(this->get_logger(), "%s: baked %zu of %d trajectory points — bake aborted.",
+                  leg_name.c_str(), trajectory_points.size(), TRAJ_POINTS_PER_CYCLE);
+      leg_failed = true;
+    }
+
     double dt = (GAIT_CYCLE_DURATION.count()) / static_cast<double>(TRAJ_POINTS_PER_CYCLE);
+    if (!leg_failed) {
+      // belt and braces: the grid times are assigned by index above, so this
+      // only trips if the time bookkeeping ever changes
+      for (size_t i = 1; i < trajectory_points.size(); ++i) {
+        auto delta = trajectory_points[i].relative_time_from_start -
+                     trajectory_points[i - 1].relative_time_from_start;
+        if (std::abs((delta - rclcpp::Duration::from_seconds(dt)).seconds()) > 1e-9) {
+          RCLCPP_ERROR(this->get_logger(), "%s: non-uniform spacing at trajectory point %zu — bake aborted.",
+                      leg_name.c_str(), i);
+          leg_failed = true;
+          break;
+        }
+      }
+    }
+
+    if (leg_failed) {
+      all_baked = false;
+      continue;  // keep this leg's previous trajectory
+    }
 
     // second pass: compute joint velocities and construct action message
     for (size_t i = 0; i < trajectory_points.size(); ++i) {
-      if (trajectory_points.size() < 2) {
-        RCLCPP_WARN(this->get_logger(), "Not enough trajectory points to compute velocities.");
-        break;
-      }
       auto& p = trajectory_points[i];
 
       if (i == 0 || i == trajectory_points.size() - 1) {  // first and last points should have zero velocities
@@ -269,13 +323,11 @@ void HexapodControllerNode::prepareLegTrajectories() {
       point.time_from_start = p.relative_time_from_start;  // time from trajectory start - must be increasing
       traj.points.push_back(point);
 
-      geometry_msgs::msg::PointStamped leg_tip_point;
-      leg_tip_point.header.frame_id = "body";
-      leg_tip_point.header.stamp = this->get_clock()->now();
-      leg_tip_point.point.x = p.leg_tip_position_global.x;
-      leg_tip_point.point.y = p.leg_tip_position_global.y;
-      leg_tip_point.point.z = p.leg_tip_position_global.z;
-      legs_[leg_id].marker.points.push_back(leg_tip_point.point);
+      geometry_msgs::msg::Point leg_tip_point;
+      leg_tip_point.x = p.leg_tip_position_global.x;
+      leg_tip_point.y = p.leg_tip_position_global.y;
+      leg_tip_point.z = p.leg_tip_position_global.z;
+      baked_markers[leg_id].push_back(leg_tip_point);
 
       // RCLCPP_INFO(this->get_logger(), (leg_name + " tip position at time
       // %.2f: (%.2f, %.2f, %.2f)").c_str(),
@@ -285,12 +337,18 @@ void HexapodControllerNode::prepareLegTrajectories() {
       //             p.leg_tip_position_global.z);
     }
 
-    if (traj.points.empty()) {
-      RCLCPP_WARN(this->get_logger(), ("No valid trajectory points generated for " + leg_name).c_str());
-      return;
-    }
+    baked_trajs[leg_id] = traj;
+  }
 
-    legs_[leg_id].trajectory = traj;
+  if (!all_baked) {
+    RCLCPP_ERROR(this->get_logger(),
+                 "Trajectory bake incomplete — keeping previous trajectories; walking stays disabled.");
+    return;  // the init timer keeps retrying
+  }
+
+  for (int leg_id = 0; leg_id < 6; ++leg_id) {
+    legs_[leg_id].trajectory = baked_trajs[leg_id];
+    legs_[leg_id].marker.points = baked_markers[leg_id];
   }
   leg_frames_initialized_ = true;
   RCLCPP_INFO(this->get_logger(), "Leg frames initialized, trajectories are ready");
@@ -306,12 +364,26 @@ void HexapodControllerNode::sendStandPose() {
     RCLCPP_WARN(this->get_logger(), "Hexapod is not ready to stand yet, ignoring stand pose command.");
     return;
   }
+  if (!leg_frames_initialized_) {
+    RCLCPP_WARN(this->get_logger(), "Gait trajectories are not baked yet, ignoring stand pose command.");
+    return;
+  }
 
-  for (auto& leg : legs_) {
+  for (int leg_id = 0; leg_id < 6; ++leg_id) {
+    auto& leg = legs_[leg_id];
     if (!leg.leg_action_in_progress) {
       if (!leg.leg_client->wait_for_action_server(
               std::chrono::milliseconds(500))) { RCLCPP_WARN(this->get_logger(), "%s action server not available", leg.name.c_str());
         return;
+      }
+
+      // standing = the gait's phase-0 pose: standing and walking then share one
+      // geometry, so there is no seam when a walk starts from standing (or when
+      // a walk re-starts after a mid-cycle halt)
+      auto stand_angles = gait_engine_->getLegTrajectoryPoint(leg_id, 0.0);
+      if (!stand_angles) {
+        RCLCPP_ERROR(this->get_logger(), "No IK solution for the stand pose of %s", leg.name.c_str());
+        continue;
       }
 
       RCLCPP_INFO(this->get_logger(), "Sending stand pose for leg %s", leg.name.c_str());
@@ -320,8 +392,7 @@ void HexapodControllerNode::sendStandPose() {
       traj.header.stamp = this->now() + rclcpp::Duration::from_seconds(0.1);  // start after 100ms delay
       traj.joint_names = leg.trajectory.joint_names;
       trajectory_msgs::msg::JointTrajectoryPoint pt;
-      pt.positions.assign(traj.joint_names.size(), 0.0);  // all zeros
-      pt.positions[2] = -0.5;
+      pt.positions = stand_angles.value();
       pt.velocities.assign(traj.joint_names.size(), 0.0);
       pt.time_from_start = rclcpp::Duration::from_seconds(1.0);  // 1 second to reach the pose
       traj.points.push_back(pt);
@@ -431,17 +502,50 @@ void HexapodControllerNode::startWalkCycle(bool is_reversed) {
     }
     fresh_traj.header.stamp = start_time;
 
-    // we have to emplace the first point that coincides with the current joint state
+    // Insert the current joint state as a lead-in point at t = 0 and shift the
+    // baked cycle by the blend duration. Replacing the phase-0 point instead
+    // (the old behavior) meant the controller had to reach the phase-1 target
+    // within one 20 ms segment — a violent lurch at every walk start.
     if (!fresh_traj.points.empty() && joint_state) {
-      trajectory_msgs::msg::JointTrajectoryPoint first_point = fresh_traj.points.front();
+      // resolve the leg's joints by name: positional slicing into the shared
+      // /joint_states message silently breaks if the publisher's ordering ever
+      // differs from the URDF declaration order
       std::vector<double> sliced_joint_positions;
-      std::copy(joint_state->position.begin() + leg_id * 3,
-                joint_state->position.begin() + (leg_id + 1) * 3,
-                std::back_inserter(sliced_joint_positions));
-      first_point.positions = sliced_joint_positions;  // use current joint state
-      first_point.velocities.assign(3, 0.0);
-      first_point.time_from_start = rclcpp::Duration::from_seconds(0.0);
-      fresh_traj.points[0] = first_point;  // replace the first point
+      bool all_joints_found = true;
+      for (const auto& joint_name : fresh_traj.joint_names) {
+        auto it = std::find(joint_state->name.begin(), joint_state->name.end(), joint_name);
+        auto index = std::distance(joint_state->name.begin(), it);
+        if (it == joint_state->name.end() ||
+            index >= static_cast<std::ptrdiff_t>(joint_state->position.size())) {
+          all_joints_found = false;
+          break;
+        }
+        sliced_joint_positions.push_back(joint_state->position[index]);
+      }
+
+      if (!all_joints_found) {
+        RCLCPP_WARN_THROTTLE(
+            this->get_logger(), *this->get_clock(), 5000,
+            "%s joints missing from /joint_states — starting from the baked phase-0 pose",
+            leg.name.c_str());
+      } else {
+        const double blend_sec = WALK_BLEND_DURATION.count() / 1000.0;
+        std::vector<trajectory_msgs::msg::JointTrajectoryPoint> blended;
+        blended.reserve(fresh_traj.points.size() + 1);
+
+        trajectory_msgs::msg::JointTrajectoryPoint current;
+        current.positions = sliced_joint_positions;  // start from where the robot is
+        current.velocities.assign(3, 0.0);
+        current.time_from_start = rclcpp::Duration::from_seconds(0.0);
+        blended.push_back(current);
+
+        for (auto& pt : fresh_traj.points) {
+          pt.time_from_start = rclcpp::Duration::from_seconds(
+              rclcpp::Duration(pt.time_from_start).seconds() + blend_sec);
+          blended.push_back(pt);
+        }
+        fresh_traj.points = blended;
+      }
     }
 
     goal_msg.trajectory = fresh_traj;
@@ -469,11 +573,21 @@ void HexapodControllerNode::startWalkCycle(bool is_reversed) {
       }
       auto time_from_start = this->now() - legs_[leg_id].action_start_time;
 
-      // the trajectory itself ends right at GAIT_CYCLE_DURATION and the result
-      // takes a moment to arrive, so a small overshoot is normal — only
-      // intervene when the result is genuinely lost
-      if (time_from_start.seconds() >= GAIT_CYCLE_DURATION.count() + 1.0) {
-        RCLCPP_WARN(this->get_logger(), "Leg %d action timed out after %.2f seconds", leg_id + 1, time_from_start.seconds());
+      // Walk goals that involve motion currently never deliver a result on
+      // their own (JTC goal-termination issue), so this watchdog is the normal
+      // per-cycle terminator, not an error path. It is tied to
+      // GAIT_CYCLE_DURATION + WALK_BLEND_DURATION on purpose: the cycle
+      // restarts exactly when the gait pattern ends, without a dead hold (the
+      // baked points are shifted by the blend lead-in, so goal-local time to
+      // the end of the pattern grows by the same amount). The goal's
+      // trajectory spans [send + 0.1 s stamp, send + WALK_BLEND_DURATION +
+      // GAIT_CYCLE_DURATION + 0.1 s], so the last ~0.1 s is cut — the foot is
+      // within ~1-2 mm of the neutral stance pose there and the next cycle's
+      // seam point re-anchors from the measured state.
+      if (time_from_start.seconds() >=
+          GAIT_CYCLE_DURATION.count() + WALK_BLEND_DURATION.count() / 1000.0) {
+        RCLCPP_INFO(this->get_logger(), "Leg %d walk goal ended by watchdog after %.2f seconds",
+                    leg_id + 1, time_from_start.seconds());
         legs_[leg_id].leg_client->async_cancel_goal(goal_handle);
         onLegFinished(leg_id);
       }

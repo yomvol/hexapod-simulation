@@ -4,19 +4,8 @@
   ros_type_name: "rosgraph_msgs/msg/Clock"
   gz_type_name: "gz.msgs.Clock"
   direction: GZ_TO_ROS
-- ros_topic_name: "/joint_states"
-  gz_topic_name: "/world/warehouse_world/model/robot/joint_state"
-  ros_type_name: "sensor_msgs/msg/JointState"
-  gz_type_name: "gz.msgs.Model"
-  direction: GZ_TO_ROS
-- ros_topic_name: "/tf"
-  gz_topic_name: "/model/robot/pose"
-  ros_type_name: "tf2_msgs/msg/TFMessage"
-  gz_type_name: "gz.msgs.Pose_V"
-  direction: GZ_TO_ROS
-- ros_topic_name: "/tf_static"
-  gz_topic_name: "/model/robot/pose_static"
-  ros_type_name: "tf2_msgs/msg/TFMessage"
-  gz_type_name: "gz.msgs.Pose_V"
-  direction: GZ_TO_ROS
 
+# /joint_states comes from the joint_state_broadcaster (via gz_ros2_control)
+# and TF from robot_state_publisher — no other gz topics are bridged. The
+# previously listed /world/.../joint_state and /model/robot/pose* entries
+# belonged to the robot model block that is commented out of world.sdf.
