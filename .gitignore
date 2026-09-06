@@ -1,6 +1,8 @@
 # Prerequisites
 *.d
 
+REPORT.md
+
 # Compiled Object files
 *.slo
 *.lo
