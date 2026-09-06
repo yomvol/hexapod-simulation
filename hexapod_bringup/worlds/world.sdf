@@ -2,10 +2,16 @@
 
 <sdf version="1.8">
   <world name="warehouse_world">
+    <!-- type is a required attribute in SDF 1.8; the value itself is ignored
+         by gz-sim (the engine is chosen by the Physics system plugin below) -->
     <physics type="ignored">
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1.0</real_time_factor>
-      <real_time_update_rate>500.0</real_time_update_rate>
+      <!-- 1000 = one physics step per ms in ~real time; must match the
+           controller_manager update_rate (1000 Hz). The walk-cycle watchdog in
+           hexapod_controller_node.cpp is sized to the gait cycle, so goal
+           timing stays consistent at this rate. -->
+      <real_time_update_rate>1000.0</real_time_update_rate>
     </physics>
     
     <plugin
