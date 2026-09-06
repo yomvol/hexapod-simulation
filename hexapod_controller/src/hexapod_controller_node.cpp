@@ -1,12 +1,5 @@
 #include "hexapod_controller_node.hpp"
 
-FSM_INITIAL_STATE(StateMachine, Rest)
-using MyFsmList = tinyfsm::FsmList<StateMachine>;
-std::function<void()> HexapodBridge::sendStandPose = []() {};
-std::function<void(bool)> HexapodBridge::startWalkCycle = [](bool is_reversed) {
-};
-std::function<void()> HexapodBridge::cancelLegActions = []() {};
-
 HexapodControllerNode::HexapodControllerNode()
     : Node("hexapod_controller"),
       tf_buffer_(this->get_clock()),
@@ -39,14 +32,14 @@ HexapodControllerNode::HexapodControllerNode()
              std::shared_ptr<std_srvs::srv::Trigger::Response> response) {
         (void)request;
         RCLCPP_INFO(this->get_logger(), "Wake up service called");
-        MyFsmList::dispatch(WakeUpEvent());
+        HexapodFsm::dispatch(WakeUpEvent());
         response->success = true;
         response->message = "ANCIENT EVIL HAS AWOKEN!";
       });
 
   cmd_vel_sub_ = this->create_subscription<geometry_msgs::msg::Twist>(
       "/cmd_vel", 10, [this](const geometry_msgs::msg::Twist::SharedPtr msg) {
-        MyFsmList::dispatch(
+        HexapodFsm::dispatch(
             CommandVelocityEvent(msg->linear.x, msg->angular.z));
       });
   joint_state_sub_ = this->create_subscription<sensor_msgs::msg::JointState>(
@@ -61,7 +54,8 @@ HexapodControllerNode::HexapodControllerNode()
     this->startWalkCycle(is_reversed);
   };
   HexapodBridge::cancelLegActions = [this]() { this->cancelLegActions(); };
-  MyFsmList::start();
+  HexapodBridge::isWalkingReversed = [this]() { return is_walking_reversed_; };
+  HexapodFsm::start();
 
   gait_engine_ = std::make_shared<GaitEngine>(GAIT_CYCLE_DURATION.count());
 
@@ -83,32 +77,31 @@ HexapodControllerNode::TrajectoryPoint::TrajectoryPoint()
       leg_tip_position_global(0.0, 0.0, 0.0) {}
 
 void HexapodControllerNode::handleNodeDiscovery() {
-  std::vector<std::string> node_names = this->get_node_names();
-
-  // count leg controllers
-  auto controller_count = std::count_if(
-      node_names.begin(), node_names.end(), [](const std::string& node_name) {
-        return node_name.find("leg") != std::string::npos &&
-               node_name.find("controller") != std::string::npos;
-      });
-
-  if (controller_count == 6) {
-    RCLCPP_INFO(this->get_logger(), "All 6 leg controllers found.");
-    node_discovery_timer_->cancel();
-    rclcpp::sleep_for(std::chrono::seconds(
-        2));  // wait a bit for controllers to be fully ready
-    sendRestPose();
+  // Node-name matching is not a reliable readiness signal here: the
+  // controller_manager spawners are named "spawner_legN_controller" and outlive
+  // the window before the controllers themselves exist. Poll the action
+  // servers directly — they only appear once each leg controller is active.
+  for (auto& leg : legs_) {
+    if (!leg.leg_client->action_server_is_ready()) {
+      RCLCPP_DEBUG(this->get_logger(), "Waiting for %s action server...", leg.name.c_str());
+      return;  // retry on the next timer tick
+    }
   }
+
+  RCLCPP_INFO(this->get_logger(), "All 6 leg action servers are ready.");
+  node_discovery_timer_->cancel();
+  sendRestPose();
 }
 
 void HexapodControllerNode::sendRestPose() {
+  rest_pose_completions_ = 0;  // readiness requires every leg to succeed in this batch
   for (int leg_id = 0; leg_id < 6; ++leg_id) {
     auto& leg = legs_[leg_id];
     if (!leg.leg_action_in_progress) {
       if (!leg.leg_client->wait_for_action_server(
               std::chrono::milliseconds(500))) {
         RCLCPP_WARN(this->get_logger(), "%s action server not available", leg.name.c_str());
-        return;
+        continue;
       }
 
       RCLCPP_INFO(this->get_logger(), "Sending rest pose for leg %s", leg.name.c_str());
@@ -136,18 +129,22 @@ void HexapodControllerNode::sendRestPose() {
         }
       };
 
-      send_goal_options.result_callback = [this, &leg](const GoalHandle::WrappedResult& result) {
+      send_goal_options.result_callback = [this, leg_id](const GoalHandle::WrappedResult& result) {
+        auto& leg = legs_[leg_id];
         if (result.code != rclcpp_action::ResultCode::SUCCEEDED) {
           RCLCPP_WARN(this->get_logger(), "%s action failed.",
                       leg.name.c_str());
           RCLCPP_WARN(this->get_logger(), "Reason: %d",
                       static_cast<int>(result.code));
-        } else {
-          RCLCPP_INFO(this->get_logger(),
-                      "%s action completed successfully.",
-                      leg.name.c_str());
-          leg.leg_action_in_progress = false;
-          this->is_ready_to_stand_ = true;
+          return;
+        }
+        RCLCPP_INFO(this->get_logger(),
+                    "%s action completed successfully.",
+                    leg.name.c_str());
+        leg.leg_action_in_progress = false;
+        if (++rest_pose_completions_ == 6) {
+          is_ready_to_stand_ = true;
+          RCLCPP_INFO(this->get_logger(), "All legs reached the rest pose, ready to stand");
         }
       };
 
@@ -186,15 +183,18 @@ void HexapodControllerNode::prepareLegTrajectories() {
     auto leg_frame = "coxa1_" + suffix;
 
     try {
+      // Never wait for transforms inside a callback: the single-threaded
+      // executor delivers /tf on this same thread, so a blocking wait could
+      // only time out. Fail fast and let the init timer retry.
       auto body_to_coxa = tf_buffer_.lookupTransform(
-          "body", leg_frame, tf2::TimePointZero, std::chrono::seconds(10));
+          "body", leg_frame, tf2::TimePointZero);
       Eigen::Isometry3d body_to_coxa_eigen =
           tf2::transformToEigen(body_to_coxa);
       gait_engine_->setLegFrames(leg_id, body_to_coxa_eigen);
     } catch (tf2::TransformException& ex) {
-      RCLCPP_WARN(this->get_logger(), "Could not get leg transforms: %s",
-                  ex.what());
-      rclcpp::shutdown();
+      RCLCPP_WARN(
+          this->get_logger(), "Leg transforms not available yet (retrying): %s",
+          ex.what());
       return;
     }
 
@@ -205,6 +205,7 @@ void HexapodControllerNode::prepareLegTrajectories() {
     // obviously, header stamp should be set later like this traj.header.stamp = ...
     std::string joint_name_prefix = "joint_" + std::to_string(leg_id + 1);
     traj.joint_names = {joint_name_prefix + "_1", joint_name_prefix + "_2", joint_name_prefix + "_3"};
+    legs_[leg_id].marker.points.clear();  // a retry re-bakes everything; don't accumulate old points
     trajectory_points.reserve(TRAJ_POINTS_PER_CYCLE);
 
     // first pass: generate all joint angles for the trajectory points
@@ -359,6 +360,28 @@ void HexapodControllerNode::sendStandPose() {
   }
 }
 
+// Single accounting path for a walk goal reaching a terminal state
+// (success, abort, rejection, or watchdog cancel). Idempotent per goal.
+void HexapodControllerNode::onLegFinished(int leg_id) {
+  auto& leg = legs_[leg_id];
+  if (leg.counted_in_cycle) {
+    return;
+  }
+  leg.counted_in_cycle = true;
+  leg.leg_action_in_progress = false;
+
+  if (--num_of_legs_in_action_ > 0) {
+    return;
+  }
+  RCLCPP_INFO(this->get_logger(), "All legs have completed their actions.");
+  for (auto& l : legs_) {
+    l.leg_action_in_progress = false;
+  }
+  if (is_walking_) {
+    startWalkCycle(is_walking_reversed_);
+  }
+}
+
 void HexapodControllerNode::startWalkCycle(bool is_reversed) {
   if (!leg_frames_initialized_) {
     RCLCPP_DEBUG(this->get_logger(), "Waiting for leg frames to be initialized...");
@@ -380,12 +403,14 @@ void HexapodControllerNode::startWalkCycle(bool is_reversed) {
   }
 
   RCLCPP_INFO(this->get_logger(), "Starting walk cycle...");
+  const uint64_t cycle_id = ++walk_cycle_id_;  // invalidates callbacks of any previous cycle
   num_of_legs_in_action_ = 6;
   auto start_time = this->now() + 100ms;  // start after 100ms delay
   auto joint_state = last_joint_state_;
 
   for (int leg_id = 0; leg_id < 6; ++leg_id) {
     auto& leg = legs_[leg_id];
+    leg.counted_in_cycle = false;
     FollowJointTrajectory::Goal goal_msg;
     leg.marker_pub->publish(leg.marker);  // publish marker for visualization
     leg.action_start_time = start_time;
@@ -395,6 +420,12 @@ void HexapodControllerNode::startWalkCycle(bool is_reversed) {
         fresh_traj.points.rbegin(), fresh_traj.points.rend());
       for (int i = 0; i < reversed.size(); ++i) {
         reversed[i].time_from_start = fresh_traj.points[i].time_from_start;
+        // the copy above kept the forward-pass velocities, but the mirrored
+        // points are traversed backwards in time — flip the sign so the
+        // controller's velocity feed-forward pushes the right way
+        for (auto& velocity : reversed[i].velocities) {
+          velocity = -velocity;
+        }
       }
       fresh_traj.points = reversed;
     }
@@ -415,40 +446,47 @@ void HexapodControllerNode::startWalkCycle(bool is_reversed) {
 
     goal_msg.trajectory = fresh_traj;
     auto send_goal_options = rclcpp_action::Client<FollowJointTrajectory>::SendGoalOptions();
-    send_goal_options.goal_response_callback = [this](const GoalHandle::SharedPtr& goal_handle) {
+    send_goal_options.goal_response_callback = [this, leg_id, cycle_id](const GoalHandle::SharedPtr& goal_handle) {
       if (!goal_handle) {
         RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
-      } else {
-        RCLCPP_INFO(this->get_logger(),
-                    "Goal accepted by server, waiting for result");
+        onLegFinished(leg_id);
+        return;
+      }
+      if (cycle_id != walk_cycle_id_) {
+        // a cancel or restart raced with this acceptance — don't let it run
+        legs_[leg_id].leg_client->async_cancel_goal(goal_handle);
+        return;
+      }
+      legs_[leg_id].active_goal_handle = goal_handle;
+      RCLCPP_INFO(this->get_logger(),
+                  "Goal accepted by server, waiting for result");
+    };
+
+    send_goal_options.feedback_callback = [this, leg_id, cycle_id](GoalHandle::SharedPtr goal_handle,
+      const std::shared_ptr<const control_msgs::action::FollowJointTrajectory::Feedback> feedback) {
+      if (cycle_id != walk_cycle_id_) {
+        return;  // feedback of a superseded cycle
+      }
+      auto time_from_start = this->now() - legs_[leg_id].action_start_time;
+
+      // the trajectory itself ends right at GAIT_CYCLE_DURATION and the result
+      // takes a moment to arrive, so a small overshoot is normal — only
+      // intervene when the result is genuinely lost
+      if (time_from_start.seconds() >= GAIT_CYCLE_DURATION.count() + 1.0) {
+        RCLCPP_WARN(this->get_logger(), "Leg %d action timed out after %.2f seconds", leg_id + 1, time_from_start.seconds());
+        legs_[leg_id].leg_client->async_cancel_goal(goal_handle);
+        onLegFinished(leg_id);
       }
     };
 
-    send_goal_options.feedback_callback = [this, leg_id](GoalHandle::SharedPtr goal_handle,
-      const std::shared_ptr<const control_msgs::action::FollowJointTrajectory::Feedback> feedback) {
-    auto time_from_start = this->now() - legs_[leg_id].action_start_time;
-
-    if (time_from_start.seconds() >= GAIT_CYCLE_DURATION.count()) {
-      RCLCPP_WARN(this->get_logger(), "Leg %d action timed out after %.2f seconds", leg_id + 1, time_from_start.seconds());
-      legs_[leg_id].leg_action_in_progress = false;
-      legs_[leg_id].leg_client->async_cancel_goal(goal_handle);
-
-      num_of_legs_in_action_--;
-      if (num_of_legs_in_action_ <= 0) {
-        RCLCPP_INFO(this->get_logger(), "All legs have completed their actions.");
-        for (auto& leg : legs_) {
-          leg.leg_action_in_progress = false;
-        }
-        if (is_walking_) {
-          startWalkCycle(is_walking_reversed_);
-        }
+    send_goal_options.result_callback = [this, leg_id, cycle_id](const GoalHandle::WrappedResult& result) {
+      legs_[leg_id].active_goal_handle = nullptr;  // terminal in every code path
+      if (cycle_id != walk_cycle_id_) {
+        return;  // result of a superseded cycle (canceled or restarted)
       }
-    }
-  };
 
-    send_goal_options.result_callback = [this, leg_id](const GoalHandle::WrappedResult& result) {
       if (result.code == rclcpp_action::ResultCode::CANCELED) {
-        // RCLCPP_WARN(this->get_logger(), "Leg %d action was canceled.", leg_id + 1);
+        onLegFinished(leg_id);  // no-op if the watchdog already accounted for it
         return;
       }
 
@@ -459,17 +497,8 @@ void HexapodControllerNode::startWalkCycle(bool is_reversed) {
         RCLCPP_INFO(this->get_logger(), "Leg action completed successfully.");
         rclcpp::Duration action_duration = this->now() - legs_[leg_id].action_start_time;
         RCLCPP_INFO(this->get_logger(), "Leg %d action duration: %.2f seconds", leg_id + 1, action_duration.seconds());
-        num_of_legs_in_action_--;
-        if (num_of_legs_in_action_ <= 0) {
-          RCLCPP_INFO(this->get_logger(), "All legs have completed their actions.");
-          for (auto& leg : legs_) {
-            leg.leg_action_in_progress = false;
-          }
-          if (is_walking_) {
-            startWalkCycle(is_walking_reversed_);
-          }
-        }
       }
+      onLegFinished(leg_id);
     };
 
     leg.leg_action_in_progress = true;
@@ -480,30 +509,16 @@ void HexapodControllerNode::startWalkCycle(bool is_reversed) {
 void HexapodControllerNode::cancelLegActions() {
   is_walking_ = false;
   is_walking_reversed_ = false;
-  for (auto& leg : legs_) {
-    leg.leg_action_in_progress = false;
-  }
+  ++walk_cycle_id_;  // feedback/result callbacks of the old cycle must not touch state anymore
   num_of_legs_in_action_ = 0;
 
-  // std::vector<std::shared_future<std::shared_ptr<action_msgs::srv::CancelGoal_Response>>>
-  // cancel_futures; for (auto & leg : legs_) {
-  //   if (leg.leg_action_in_progress) {
-  //     RCLCPP_INFO(this->get_logger(), "Cancelling action for %s",
-  //     leg.name.c_str()); auto cancel_future =
-  //     leg.leg_client->async_cancel_all_goals();
-  //     cancel_futures.push_back(cancel_future);
-  //   }
-  // }
-
-  // for (auto & f : cancel_futures) {
-  //   if (f.wait_for(std::chrono::seconds(2)) == std::future_status::ready) {
-  //     auto result = f.get();
-  //     RCLCPP_INFO(get_logger(), "Cancel result code: %d",
-  //     result->return_code);
-  //   } else {
-  //     RCLCPP_WARN(get_logger(), "Cancel timed out");
-  //   }
-  // }
+  for (auto& leg : legs_) {
+    if (leg.active_goal_handle) {
+      leg.leg_client->async_cancel_goal(leg.active_goal_handle);
+    }
+    leg.active_goal_handle = nullptr;
+    leg.leg_action_in_progress = false;
+  }
 }
 
 int main(int argc, char** argv) {

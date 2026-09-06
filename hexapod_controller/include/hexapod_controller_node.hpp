@@ -18,113 +18,10 @@
 #include <trajectory_msgs/msg/joint_trajectory_point.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 
+#include "fsm.hpp"
 #include "gait_engine.hpp"
-#include "tinyfsm.hpp"
 
 using namespace std::chrono_literals;
-
-#pragma region Finite State Machine
-// Finite State Machine Events
-struct WakeUpEvent : tinyfsm::Event {};
-struct CommandVelocityEvent : tinyfsm::Event {
-  double linear_x;
-  double angular_z;
-  CommandVelocityEvent(double lx = 0.0, double az = 0.0)
-      : linear_x(lx), angular_z(az) {}
-};
-
-/* ----------- bridge (FSM -> ROS side effects) ----------- */
-/* node will set these callbacks so FSM code can call them in transition actions
- */
-struct HexapodBridge {
-  static std::function<void()> sendStandPose;
-  static std::function<void(bool)> startWalkCycle;
-  static std::function<void()> cancelLegActions;
-};
-
-class StateMachine : public tinyfsm::Fsm<StateMachine> {
- public:
-  void react(tinyfsm::Event const& e) {}  // default empty reaction
-  virtual void react(WakeUpEvent const& e) {}
-  virtual void react(CommandVelocityEvent const& e) {}
-  virtual void entry() {}
-  virtual void exit() {}
-};
-#pragma endregion Finite State Machine
-
-// States
-#pragma region States
-class Rest;
-class Standing;
-class Walking;
-constexpr double VELOCITY_DEADZONE = 0.01;
-
-class Rest : public StateMachine {
- public:
-  using StateMachine::react;
-
-  void entry() override {
-    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Rest state");
-  }
-
-  void react(WakeUpEvent const& e) override {
-    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Standing state");
-    auto action = []() { HexapodBridge::sendStandPose(); };
-    transit<Standing>(action);
-  }
-};
-
-class Standing : public StateMachine {
- public:
-  using StateMachine::react;
-
-  void entry() override {
-    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Standing state");
-  }
-
-  void react(CommandVelocityEvent const& e) override {
-    if (std::abs(e.linear_x) > VELOCITY_DEADZONE) {
-      RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Walking state");
-      bool is_reversed = e.linear_x < 0;
-      auto action = [is_reversed]() {
-        HexapodBridge::startWalkCycle(is_reversed);
-      };
-      transit<Walking>(action);
-    } else {
-      RCLCPP_DEBUG(rclcpp::get_logger("hexapod_controller"), "Ignoring insignificant velocity changes");
-    }
-  }
-};
-
-class Walking : public StateMachine {
- public:
-  using StateMachine::react;
-
-  void entry() override {
-    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Entering Walking state");
-  }
-
-  void react(CommandVelocityEvent const& e) override {
-    if (std::abs(e.linear_x) < VELOCITY_DEADZONE &&
-        std::abs(e.angular_z) < VELOCITY_DEADZONE) {
-      RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Transitioning to Standing state");
-      auto action = []() {
-        HexapodBridge::cancelLegActions();
-        HexapodBridge::sendStandPose();
-      };
-      transit<Standing>(action);
-    } else {
-      bool is_reversed = e.linear_x < 0;
-      HexapodBridge::cancelLegActions();
-      HexapodBridge::startWalkCycle(is_reversed);
-    }
-  }
-
-  void exit() override {
-    RCLCPP_INFO(rclcpp::get_logger("hexapod_controller"), "Exiting Walking state");
-  }
-};
-#pragma endregion States
 
 class HexapodControllerNode : public rclcpp::Node {
  public:
@@ -147,6 +44,8 @@ class HexapodControllerNode : public rclcpp::Node {
     trajectory_msgs::msg::JointTrajectory trajectory;
     bool leg_action_in_progress = false;
     rclcpp::Time action_start_time;
+    GoalHandle::SharedPtr active_goal_handle;  // set on acceptance, cleared on terminal result
+    bool counted_in_cycle = false;  // guards against double-counting a goal in num_of_legs_in_action_
   };
 
   HexapodControllerNode();
@@ -168,6 +67,8 @@ class HexapodControllerNode : public rclcpp::Node {
   rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr wake_srv_;
   rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_vel_sub_;
   int num_of_legs_in_action_ = 0;
+  int rest_pose_completions_ = 0;  // rest-pose goals finished successfully; readiness requires all six
+  uint64_t walk_cycle_id_ = 0;  // bumped on every (re)start and cancel; stale action callbacks bail on mismatch
   rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_state_sub_;
   sensor_msgs::msg::JointState::SharedPtr last_joint_state_;
 
@@ -176,5 +77,6 @@ class HexapodControllerNode : public rclcpp::Node {
   void prepareLegTrajectories();
   void sendStandPose();
   void startWalkCycle(bool is_reversed);
+  void onLegFinished(int leg_id);
   void cancelLegActions();
 };

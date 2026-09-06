@@ -8,6 +8,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, Command, FindExecutable
 
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 
 def generate_launch_description():
     pkg_project_bringup = get_package_share_directory('hexapod_bringup')
@@ -22,7 +23,9 @@ def generate_launch_description():
         'phantomx.xacro'
     ])
     generated_urdf = Command([FindExecutable(name='xacro'), ' ', xacro_file])
-    robot_desc = {'robot_description': generated_urdf}
+    # ParameterValue(str) is required: otherwise launch YAML-parses the URDF and
+    # any colon inside it (e.g. in a comment) aborts the whole launch
+    robot_desc = {'robot_description': ParameterValue(generated_urdf, value_type=str)}
 
     gz_sim = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -95,6 +98,7 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['leg1_controller', '--controller-manager', '/controller_manager'],
+        parameters=[{'use_sim_time': True}],
         output='screen'
     )
 
@@ -102,6 +106,7 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['leg2_controller', '--controller-manager', '/controller_manager'],
+        parameters=[{'use_sim_time': True}],
         output='screen'
     )
 
@@ -109,6 +114,7 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['leg3_controller', '--controller-manager', '/controller_manager'],
+        parameters=[{'use_sim_time': True}],
         output='screen'
     )
 
@@ -116,6 +122,7 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['leg4_controller', '--controller-manager', '/controller_manager'],
+        parameters=[{'use_sim_time': True}],
         output='screen'
     )
 
@@ -123,6 +130,7 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['leg5_controller', '--controller-manager', '/controller_manager'],
+        parameters=[{'use_sim_time': True}],
         output='screen'
     )
 
@@ -130,6 +138,7 @@ def generate_launch_description():
         package='controller_manager',
         executable='spawner',
         arguments=['leg6_controller', '--controller-manager', '/controller_manager'],
+        parameters=[{'use_sim_time': True}],
         output='screen'
     )
 

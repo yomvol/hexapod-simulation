@@ -1,4 +1,5 @@
 #include "gait_engine.hpp"
+#include <algorithm>
 #include <cmath>
 
 GaitEngine::GaitEngine(int cycle_duration) {
@@ -152,18 +153,20 @@ std::optional<std::array<double, 3>> GaitEngine::computeLegIK(Vec3 leg_tip_posit
                                    // origin is on the ground
 
   double theta1 = atan2(leg_tip_position.y, leg_tip_position.x);
-  double l = sqrt(
-      (Z_OFFSET - leg_tip_position.z) * (Z_OFFSET - leg_tip_position.z) +
-      (leg_tip_position.x - COXA_LENGTH) * (leg_tip_position.x - COXA_LENGTH));
-
   // angles theta2 and theta3 are computed in the plane of the leg (coxa to
   // endpoint) r is the distance from the coxa to the endpoint in the XY plane
   double r = sqrt(leg_tip_position.x * leg_tip_position.x +
                   leg_tip_position.y * leg_tip_position.y);
+  // l is the distance from the femur joint to the endpoint measured in the
+  // leg's vertical plane, so it must use the radial distance r, not x
+  double l = sqrt(
+      (Z_OFFSET - leg_tip_position.z) * (Z_OFFSET - leg_tip_position.z) +
+      (r - COXA_LENGTH) * (r - COXA_LENGTH));
 
-  // check if target is reachable
+  // check if target is reachable (outer and inner bound of femur+tibia)
   double max_reach = FEMUR_LENGTH + TIBIA_LENGTH;
-  if (l > max_reach) {
+  double min_reach = fabs(TIBIA_LENGTH - FEMUR_LENGTH);
+  if (l > max_reach || l < min_reach) {
     return std::nullopt;
   }
 
@@ -171,15 +174,20 @@ std::optional<std::array<double, 3>> GaitEngine::computeLegIK(Vec3 leg_tip_posit
   double cos_beta =
       (FEMUR_LENGTH * FEMUR_LENGTH - TIBIA_LENGTH * TIBIA_LENGTH + l * l) /
       (2 * FEMUR_LENGTH * l);
+  cos_beta = std::clamp(cos_beta, -1.0, 1.0);  // guard acos against float rounding at the reach boundaries
   double beta = acos(cos_beta);
-  // double theta2 = M_PI - (alpha + beta); // don't touch magic numbers lol -110.4948
-  double theta2 = alpha + beta - 110.4948 * M_PI / 180.0;
+  // femur points along the target direction (gamma = -alpha in this convention)
+  // rotated by the elbow angle beta; the DH offset converts back to the user
+  // angle. The old form (alpha + beta - 110.4948 deg) embedded the rest-pose
+  // ray angle and was only exact there.
+  double theta2 = beta - alpha - dh_params_.theta2_offset;
 
   double cos_theta3 =
       (FEMUR_LENGTH * FEMUR_LENGTH + TIBIA_LENGTH * TIBIA_LENGTH - l * l) /
       (2 * TIBIA_LENGTH * FEMUR_LENGTH);
-  // double theta3 = M_PI/2 - acos(cos_theta3); // -114.0014
-  double theta3 = acos(cos_theta3) - 114.0014 * M_PI / 180.0;
+  cos_theta3 = std::clamp(cos_theta3, -1.0, 1.0);
+  // tibia: fold the interior elbow angle over M_PI, convert back to user angle
+  double theta3 = acos(cos_theta3) - M_PI - dh_params_.theta3_offset;
 
   std::array<double, 3> joint_angles = {theta1, theta2, theta3};
   return joint_angles;

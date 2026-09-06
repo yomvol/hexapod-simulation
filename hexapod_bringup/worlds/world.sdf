@@ -2,9 +2,15 @@
 
 <sdf version="1.8">
   <world name="warehouse_world">
+    <!-- type is a required attribute in SDF 1.8; the value itself is ignored
+         by gz-sim (the engine is chosen by the Physics system plugin below) -->
     <physics type="ignored">
       <max_step_size>0.001</max_step_size>
       <real_time_factor>1.0</real_time_factor>
+      <!-- 500 (RTF ~0.5, sim at half wall speed) is intentional: at 1000 the
+           walk-cycle action goals stop completing on time and get watchdog-
+           cancelled every cycle. Revisit only together with the goal-timing
+           investigation. -->
       <real_time_update_rate>500.0</real_time_update_rate>
     </physics>
     
